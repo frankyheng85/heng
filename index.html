@@ -2156,7 +2156,7 @@ body {
                 <span class="brand-icon">🏫</span>
                 <div>
                     <h1>智能教务派代课与津贴请款系统</h1>
-                    <p>支持手机/平板教师自助请假 · 个人课表与代课查询 · 局域网多设备实时同步</p>
+                    <p>支持校外网络 (4G/5G/Wi-Fi) 手机与平板自助请假 · 个人课表与代课查询 · 云端多设备同步</p>
                 </div>
             </div>
             <!-- Current Logged-In User Identity & Quick Actions -->
@@ -2171,9 +2171,9 @@ body {
                 <button type="button" id="btnHeaderLogout" class="btn btn-sm" onclick="logoutCurrentUser()" style="background:#ef4444; color:#fff; border:1px solid #dc2626; font-weight:700; padding:5px 10px; border-radius:8px; cursor:pointer;">
                     🚪 切换/退出
                 </button>
-                <button type="button" id="btnLanShareInfo" class="btn btn-sm" onclick="openLanShareModal()" style="background: #0d9488; color: #fff; border: 1px solid #0f766e; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 8px; cursor: pointer;">
-                    <span id="lanShareStatusDot">🌐</span>
-                    <span id="lanShareStatusLabel">同网共享网址</span>
+                <button type="button" id="btnLanShareInfo" class="btn btn-sm" onclick="openLanShareModal()" style="background: #0284c7; color: #fff; border: 1px solid #0369a1; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 8px; cursor: pointer;">
+                    <span id="lanShareStatusDot">☁️</span>
+                    <span id="lanShareStatusLabel">校外云端连接</span>
                 </button>
             </div>
         </div>
@@ -3868,49 +3868,73 @@ body {
         </div>
     </div>
 
-    <!-- LAN Share & Multi-Device Sync Modal (局域网共享与多设备实时同步面板) -->
+    <!-- Off-Campus Internet Cloud Connection & Multi-Device Sync Modal (校外互联网云端连接与跨网同步面板) -->
     <div id="lanShareModal" class="modal-overlay" style="display:none;">
-        <div class="modal-content" style="max-width: 680px; width: 95vw;">
-            <div class="modal-header" style="background: linear-gradient(135deg, #0f766e, #0284c7); color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;">
+        <div class="modal-content" style="max-width: 720px; width: 95vw;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #1e3a8a, #0284c7); color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 22px;">🌐</span>
+                    <span style="font-size: 22px;">☁️</span>
                     <div>
-                        <h3 style="margin: 0; color: #fff; font-size: 16.5px;">局域网共享部署与同网多设备访问</h3>
-                        <div style="font-size: 12px; color: #e0f2fe; margin-top: 2px;">连接同一个 Wi-Fi / 局域网的电脑、手机、平板可直接访问并实时共享数据</div>
+                        <h3 style="margin: 0; color: #fff; font-size: 16.5px;">校外互联网云端连接与多设备数据同步 (GitHub Cloud)</h3>
+                        <div style="font-size: 12px; color: #e0f2fe; margin-top: 2px;">无需连接学校同一 Wi-Fi · 老师在家用 4G/5G 手机流量或宽带均可随时访问并同步请假与代课数据</div>
                     </div>
                 </div>
                 <button type="button" class="btn-close-modal" onclick="closeLanShareModal()">✕</button>
             </div>
             <div class="modal-body" style="padding: 20px;">
-                <div id="lanShareConnectionBanner" style="padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; background: #f0fdf4; border: 1px solid #86efac; color: #166534; font-size: 13.5px; line-height: 1.6;">
-                    🟢 <strong>局域网共享服务器已连接！</strong> 任何设备在此网页上新增的代课、授课、调课或课表修改，都会自动保存在主机并同步给同网所有设备。
+                <div id="lanShareConnectionBanner" style="padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; background: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; font-size: 13.5px; line-height: 1.6;">
+                    ☁️ <strong>校外互联网云端模式</strong>：支持全校老师在任何地点（家里、校外 4G/5G 手机、平板、电脑）直接通过 GitHub Pages 云端网址访问。
                 </div>
 
-                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin-bottom: 16px;">
-                    <div style="font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 8px;">📡 同一网络（Wi-Fi / 局域网）其他电脑、手机、平板访问网址：</div>
+                <!-- 1. Public Off-Campus URL -->
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 15px 16px; margin-bottom: 16px;">
+                    <div style="font-size: 13.5px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">🌍 1. 校外互联网公开访问网址（GitHub Pages）：</div>
                     <div id="lanShareUrlsContainer" style="display: flex; flex-direction: column; gap: 8px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 2px solid #0284c7; border-radius: 8px; padding: 10px 14px;">
-                            <code id="primaryLanUrlText" style="font-size: 17px; font-weight: 800; color: #0369a1; user-select: all;">http://192.168.8.234:8080</code>
-                            <button type="button" class="btn btn-primary btn-sm" onclick="copyLanUrlText('primaryLanUrlText')">📋 复制网址</button>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 2px solid #0284c7; border-radius: 8px; padding: 10px 14px; flex-wrap: wrap;">
+                            <code id="primaryCloudUrlText" style="font-size: 16px; font-weight: 800; color: #0369a1; user-select: all; word-break: break-all;">https://frankyheng85.github.io/heng/</code>
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="copyLanUrlText('primaryCloudUrlText')">📋 复制网址</button>
+                                <button type="button" class="btn btn-success btn-sm" onclick="copyTeacherCloudAutoLink()" title="复制带有云端同步通道的专属链接发给老师，老师点击一次即可在校外 4G/5G 实时提交请假到教务处">🔗 复制带云端同步的老师专属链接</button>
+                            </div>
                         </div>
                     </div>
-                    <div style="font-size: 12px; color: #64748b; margin-top: 8px;">
-                        💡 请确保其他同事的电脑、手机或平板连接在<strong>同一个 Wi-Fi 或路由器网络</strong>下，然后在浏览器（Chrome / Edge / Safari）地址栏输入上方网址即可直接进入系统。
+                    <div style="font-size: 12px; color: #64748b; margin-top: 8px; line-height: 1.5;">
+                        💡 提示：若您配置了下方的「GitHub 云端数据库同步令牌」，点击 <strong>「🔗 复制带云端同步的老师专属链接」</strong> 发到老师 WhatsApp/微信群，老师在家里用手机点开该链接一次，即可直接在家提交请假单并实时同步回教务处！
                     </div>
                 </div>
 
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
-                    <div style="font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">💻 本机电脑访问网址：</div>
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                        <code id="localHostUrlText" style="font-size: 14.5px; font-weight: 700; color: #334155; user-select: all;">http://localhost:8080</code>
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyLanUrlText('localHostUrlText')">📋 复制本机网址</button>
+                <!-- 2. GitHub Cloud Database Multi-Device Sync Configuration (Admin Only / Cloud Sync Setup) -->
+                <div id="cloudSyncConfigCard" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 15px 16px; margin-bottom: 16px;">
+                    <div style="font-size: 13.5px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">🔑 2. 跨网络云端实时数据库配置（让校外 20+ 人同时在线共享同一份数据）：</div>
+                    <div style="font-size: 12px; color: #475569; margin-bottom: 12px; line-height: 1.5;">
+                        绑定您的 GitHub 仓库（默认 <code>frankyheng85/heng</code>）作为免费云端数据库（自动读写仓库内的 <code>cloud_shared_data.json</code>）：
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                        <div class="control-group">
+                            <label for="cloudGhOwnerInput" style="font-size:12px; font-weight:700;">GitHub 用户名 (Owner)</label>
+                            <input type="text" id="cloudGhOwnerInput" class="form-input form-input-sm" value="frankyheng85" placeholder="如 frankyheng85">
+                        </div>
+                        <div class="control-group">
+                            <label for="cloudGhRepoInput" style="font-size:12px; font-weight:700;">GitHub 仓库名 (Repository)</label>
+                            <input type="text" id="cloudGhRepoInput" class="form-input form-input-sm" value="heng" placeholder="如 heng">
+                        </div>
+                    </div>
+                    <div class="control-group" style="margin-bottom: 12px;">
+                        <label for="cloudGhTokenInput" style="font-size:12px; font-weight:700;">GitHub 云端同步令牌 (Personal Access Token，勾选 repo 权限)</label>
+                        <div style="display:flex; gap:8px;">
+                            <input type="password" id="cloudGhTokenInput" class="form-input form-input-sm" style="flex:1;" placeholder="粘贴 ghp_... 或 github_pat_... 令牌以启用校外双向实时同步">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="saveCloudSyncConfigAndTest()">💾 保存并连接云端</button>
+                        </div>
+                        <div style="font-size:11.5px; color:#64748b; margin-top:4px;">
+                            👉 获取令牌地址：<a href="https://github.com/settings/tokens/new?scopes=repo&description=SubTeacherCloudSync" target="_blank" style="color:#2563eb; font-weight:700;">点击此处在 GitHub 一键生成 Token (已自动勾选 repo)</a>，生成后粘贴到上方并点击「保存并连接云端」。
+                        </div>
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="manualPullFromLanServer()">🔄 从主机拉取最新数据</button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="manualPushToLanServer()">📤 将本机数据同步至主机</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="manualPullFromLanServer()">🔄 从 GitHub 云端拉取最新数据</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="manualPushToLanServer()">📤 将当前数据推送至 GitHub 云端</button>
                     </div>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="closeLanShareModal()">关闭窗口</button>
                 </div>
@@ -15123,21 +15147,101 @@ function showToast(msg) {
 }
 
 // ============================================================================
-// LAN MULTI-DEVICE REAL-TIME SHARED DATABASE SYNC ENGINE
+// OFF-CAMPUS INTERNET CLOUD DATABASE SYNC ENGINE (GitHub Cloud DB - 免局域网跨网同步)
 // ============================================================================
 
-const STORAGE_KEY_LAN_UPDATED_AT = "school_sub_lan_updated_at_v1";
-let lanSyncTimer = null;
-let lanPollInterval = null;
-let lanServerConnected = false;
-let lanServerInfo = null;
-let lastAppliedServerTimestamp = parseInt(localStorage.getItem(STORAGE_KEY_LAN_UPDATED_AT) || "0", 10) || 0;
+const STORAGE_KEY_CLOUD_UPDATED_AT = "school_sub_cloud_updated_at_v1";
+const STORAGE_KEY_CLOUD_CONFIG = "school_sub_github_cloud_cfg_v1";
+const CLOUD_DB_FILENAME = "cloud_shared_data.json";
 
-function getLanApiBaseUrl() {
-    if (window.location.protocol === "http:" || window.location.protocol === "https:") {
-        return window.location.origin;
+let cloudSyncTimer = null;
+let cloudPollInterval = null;
+let cloudConnected = false;
+let cloudSyncInProgress = false;
+let lastAppliedServerTimestamp = parseInt(localStorage.getItem(STORAGE_KEY_CLOUD_UPDATED_AT) || "0", 10) || 0;
+
+function utf8ToBase64(str) {
+    const bytes = new TextEncoder().encode(str);
+    let binStr = "";
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+        binStr += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
     }
-    return "http://127.0.0.1:8080";
+    return btoa(binStr);
+}
+
+function base64ToUtf8(b64) {
+    const clean = (b64 || "").replace(/\s+/g, "");
+    const binStr = atob(clean);
+    const bytes = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) {
+        bytes[i] = binStr.charCodeAt(i);
+    }
+    return new TextDecoder("utf-8").decode(bytes);
+}
+
+function getCloudSyncConfig() {
+    let defaultOwner = "frankyheng85";
+    let defaultRepo = "heng";
+
+    // Auto-detect owner & repo if hosted on *.github.io/<repo>/
+    const host = (window.location.hostname || "").toLowerCase();
+    if (host.endsWith(".github.io")) {
+        const sub = host.replace(".github.io", "");
+        if (sub) defaultOwner = sub;
+        const pathParts = (window.location.pathname || "/").split("/").filter(Boolean);
+        if (pathParts.length > 0 && !pathParts[0].endsWith(".html")) {
+            defaultRepo = pathParts[0];
+        }
+    }
+
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_CLOUD_CONFIG);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            return {
+                owner: (parsed.owner || defaultOwner).trim(),
+                repo: (parsed.repo || defaultRepo).trim(),
+                token: (parsed.token || "").trim()
+            };
+        }
+    } catch (e) {}
+
+    return {
+        owner: defaultOwner,
+        repo: defaultRepo,
+        token: ""
+    };
+}
+
+function saveCloudSyncConfigObj(cfg) {
+    try {
+        localStorage.setItem(STORAGE_KEY_CLOUD_CONFIG, JSON.stringify({
+            owner: (cfg.owner || "frankyheng85").trim(),
+            repo: (cfg.repo || "heng").trim(),
+            token: (cfg.token || "").trim()
+        }));
+    } catch (e) {}
+}
+
+function checkUrlHashForCloudInvite() {
+    const hash = window.location.hash || "";
+    if (hash.startsWith("#cloud=")) {
+        try {
+            const encoded = decodeURIComponent(hash.slice("#cloud=".length));
+            const jsonStr = base64ToUtf8(encoded);
+            const cfg = JSON.parse(jsonStr);
+            if (cfg && cfg.owner && cfg.repo && cfg.token) {
+                saveCloudSyncConfigObj(cfg);
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
+                }
+                showToast("☁️ 已成功激活校外互联网云端实时同步通道！");
+            }
+        } catch (e) {
+            console.warn("Invalid #cloud invite hash:", e);
+        }
+    }
 }
 
 function buildLanSyncPayload(timestampOverride) {
@@ -15245,7 +15349,7 @@ function applyLanServerPayloadToLocal(serverData, silent) {
         }
 
         lastAppliedServerTimestamp = serverData.updatedAt || Date.now();
-        try { localStorage.setItem(STORAGE_KEY_LAN_UPDATED_AT, String(lastAppliedServerTimestamp)); } catch (e) {}
+        try { localStorage.setItem(STORAGE_KEY_CLOUD_UPDATED_AT, String(lastAppliedServerTimestamp)); } catch (e) {}
 
         renderAll();
         if (typeof renderHomeroomTab === "function") renderHomeroomTab();
@@ -15257,55 +15361,135 @@ function applyLanServerPayloadToLocal(serverData, silent) {
         updateStorageHealthIndicator();
 
         if (!silent) {
-            showToast(`🔄 已同步局域网主机最新数据（共 ${state.records.length} 笔代课记录）`);
+            showToast(`☁️ 已从 GitHub 云端同步最新数据（共 ${state.records.length} 笔代课记录）`);
         }
     } finally {
         window._suppressLanPush = false;
     }
 }
 
-async function pushStateToLanServer(silent) {
-    const base = getLanApiBaseUrl();
+async function pushStateToCloudServer(silent) {
+    const cfg = getCloudSyncConfig();
+    if (!cfg.owner || !cfg.repo || !cfg.token) {
+        if (!silent) {
+            showToast("⚠️ 请先在「☁️ 校外云端连接」中填写并保存 GitHub 同步令牌 (Token)");
+            openLanShareModal();
+        }
+        return false;
+    }
+
+    if (cloudSyncInProgress) return false;
+    cloudSyncInProgress = true;
+
     const nowTs = Date.now();
     const payload = buildLanSyncPayload(nowTs);
+    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${CLOUD_DB_FILENAME}`;
+    const headers = {
+        "Authorization": `Bearer ${cfg.token}`,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json"
+    };
+
     try {
-        const res = await fetch(`${base}/api/sync`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+        // 1. Check current file SHA if it exists
+        let existingSha = null;
+        try {
+            const getRes = await fetch(`${apiUrl}?t=${Date.now()}`, { headers, cache: "no-store" });
+            if (getRes.ok) {
+                const fileMeta = await getRes.json();
+                if (fileMeta && fileMeta.sha) {
+                    existingSha = fileMeta.sha;
+                }
+            }
+        } catch (e) {}
+
+        // 2. PUT updated cloud_shared_data.json
+        const bodyObj = {
+            message: `Cloud sync update ${new Date(nowTs).toISOString()}`,
+            content: utf8ToBase64(JSON.stringify(payload))
+        };
+        if (existingSha) {
+            bodyObj.sha = existingSha;
+        }
+
+        const putRes = await fetch(apiUrl, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(bodyObj)
         });
-        if (res.ok) {
+
+        if (putRes.ok) {
             lastAppliedServerTimestamp = nowTs;
-            try { localStorage.setItem(STORAGE_KEY_LAN_UPDATED_AT, String(nowTs)); } catch (e) {}
-            setLanStatusBadge(true);
+            try { localStorage.setItem(STORAGE_KEY_CLOUD_UPDATED_AT, String(nowTs)); } catch (e) {}
+            setCloudStatusBadge(true, true);
             if (!silent) {
-                showToast("📤 已将当前数据同步保存至局域网共享主机！");
+                showToast("☁️ 已成功将当前数据推送保存至 GitHub 云端数据库！");
             }
             return true;
+        } else {
+            setCloudStatusBadge(false, Boolean(cfg.token));
+            if (!silent) {
+                showToast("❌ 推送至 GitHub 云端失败，请检查 Token 权限 (需勾选 repo) 及仓库名是否正确");
+            }
         }
     } catch (e) {
-        setLanStatusBadge(false);
+        setCloudStatusBadge(false, Boolean(cfg.token));
+        if (!silent) {
+            showToast("❌ 网络连接异常，无法连接到 GitHub 云端");
+        }
+    } finally {
+        cloudSyncInProgress = false;
     }
     return false;
 }
 
 window.scheduleLanSyncPush = function() {
+    const cfg = getCloudSyncConfig();
+    if (!cfg.token) return; // Only auto-push when token is configured
     const nowTs = Date.now();
     lastAppliedServerTimestamp = nowTs;
-    try { localStorage.setItem(STORAGE_KEY_LAN_UPDATED_AT, String(nowTs)); } catch (e) {}
-    if (lanSyncTimer) clearTimeout(lanSyncTimer);
-    lanSyncTimer = setTimeout(() => {
-        pushStateToLanServer(true);
-    }, 350);
+    try { localStorage.setItem(STORAGE_KEY_CLOUD_UPDATED_AT, String(nowTs)); } catch (e) {}
+    if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(() => {
+        pushStateToCloudServer(true);
+    }, 800);
 };
 
-async function pullStateFromLanServer(isInitial, silent) {
-    const base = getLanApiBaseUrl();
+async function pullStateFromCloudServer(isInitial, silent) {
+    const cfg = getCloudSyncConfig();
+    if (!cfg.owner || !cfg.repo) return false;
+
+    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${CLOUD_DB_FILENAME}?t=${Date.now()}`;
+    const headers = {
+        "Accept": "application/vnd.github+json"
+    };
+    if (cfg.token) {
+        headers["Authorization"] = `Bearer ${cfg.token}`;
+    }
+
     try {
-        const res = await fetch(`${base}/api/sync?t=${Date.now()}`, { cache: "no-store" });
-        if (!res.ok) return false;
-        const serverData = await res.json();
-        setLanStatusBadge(true);
+        const res = await fetch(apiUrl, { headers, cache: "no-store" });
+        if (res.status === 404) {
+            // File not created yet in the repo
+            if (cfg.token) {
+                setCloudStatusBadge(true, true);
+                if (isInitial && hasMeaningfulLocalData()) {
+                    await pushStateToCloudServer(true);
+                }
+            }
+            return true;
+        }
+        if (!res.ok) {
+            setCloudStatusBadge(false, Boolean(cfg.token));
+            return false;
+        }
+
+        const fileObj = await res.json();
+        if (!fileObj || !fileObj.content) return false;
+
+        const decodedStr = base64ToUtf8(fileObj.content);
+        const serverData = JSON.parse(decodedStr);
+        setCloudStatusBadge(true, Boolean(cfg.token));
 
         if (serverData && serverData.hasData) {
             const serverTs = serverData.updatedAt || 0;
@@ -15313,144 +15497,157 @@ async function pullStateFromLanServer(isInitial, silent) {
             const localRecCount = Array.isArray(state.records) ? state.records.length : 0;
 
             if (isInitial) {
-                // On initial load: if local has more data and newer timestamp (e.g. host file:// migrating to server), push local; otherwise pull server
-                if (localRecCount > serverRecCount && lastAppliedServerTimestamp > serverTs) {
-                    await pushStateToLanServer(true);
+                if (cfg.token && localRecCount > serverRecCount && lastAppliedServerTimestamp > serverTs) {
+                    await pushStateToCloudServer(true);
                 } else if (serverTs > lastAppliedServerTimestamp || (!hasMeaningfulLocalData() && serverRecCount >= 0)) {
                     applyLanServerPayloadToLocal(serverData, silent);
                 }
             } else {
-                // Periodic check or manual pull
                 if (!silent || serverTs > lastAppliedServerTimestamp) {
                     applyLanServerPayloadToLocal(serverData, silent);
                 }
             }
-        } else if (isInitial && hasMeaningfulLocalData()) {
-            // Server database is currently empty, seed it automatically from this browser!
-            await pushStateToLanServer(true);
+        } else if (isInitial && cfg.token && hasMeaningfulLocalData()) {
+            await pushStateToCloudServer(true);
         }
         return true;
     } catch (e) {
-        setLanStatusBadge(false);
+        setCloudStatusBadge(false, Boolean(cfg.token));
         return false;
     }
 }
 
-function setLanStatusBadge(connected) {
-    lanServerConnected = connected;
+function setCloudStatusBadge(connected, hasWriteToken) {
+    cloudConnected = connected;
     const dot = document.getElementById("lanShareStatusDot");
     const label = document.getElementById("lanShareStatusLabel");
     const banner = document.getElementById("lanShareConnectionBanner");
+    const cfg = getCloudSyncConfig();
+
     if (dot && label) {
-        if (connected) {
+        if (connected && hasWriteToken) {
             dot.textContent = "🟢";
-            label.textContent = "同网共享: 已连接";
+            label.textContent = "云端实时同步: 已开启";
+        } else if (connected) {
+            dot.textContent = "☁️";
+            label.textContent = "校外云端连接 (只读)";
         } else {
-            dot.textContent = "🌐";
-            label.textContent = "同网共享网址";
+            dot.textContent = "☁️";
+            label.textContent = "校外云端连接";
         }
     }
+
     if (banner) {
-        if (connected) {
+        if (connected && hasWriteToken) {
             banner.style.background = "#f0fdf4";
             banner.style.borderColor = "#86efac";
             banner.style.color = "#166534";
-            banner.innerHTML = "🟢 <strong>局域网共享服务器运行中！</strong> 同一网络下的任何电脑、手机、平板打开下方网址均可直接访问，且所有代课、授课、调课与课表数据自动实时同步。";
+            banner.innerHTML = `🟢 <strong>GitHub 跨网络云端实时同步已连接 (${cfg.owner}/${cfg.repo})！</strong> 无论老师在家里用 4G/5G 手机流量还是学校电脑访问，所有请假申请、密码修改与派代课记录均自动跨网实时同步。`;
         } else {
-            banner.style.background = "#fffbeb";
-            banner.style.borderColor = "#fde68a";
-            banner.style.color = "#92400e";
-            banner.innerHTML = "⚠️ <strong>当前未检测到后台局域网服务响应。</strong> 请在主机文件夹双击运行 <code>一键启动局域网共享服务器.bat</code>（或 <code>教务派代课局域网服务器.exe</code>）即可开启同网共享。";
-        }
-    }
-}
-
-async function fetchLanServerInfo() {
-    const base = getLanApiBaseUrl();
-    try {
-        const res = await fetch(`${base}/api/info?t=${Date.now()}`, { cache: "no-store" });
-        if (!res.ok) return;
-        const info = await res.json();
-        if (info && info.ok) {
-            lanServerInfo = info;
-            setLanStatusBadge(true);
-            const container = document.getElementById("lanShareUrlsContainer");
-            const localEl = document.getElementById("localHostUrlText");
-            if (localEl && info.localUrl) {
-                localEl.textContent = info.localUrl;
-            }
-            if (container && Array.isArray(info.urls) && info.urls.length > 0) {
-                container.innerHTML = info.urls.map((u, idx) => `
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 2px solid #0284c7; border-radius: 8px; padding: 10px 14px;">
-                        <code id="lanUrlItem_${idx}" style="font-size: 17px; font-weight: 800; color: #0369a1; user-select: all;">${u}</code>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="copyLanUrlText('lanUrlItem_${idx}')">📋 复制网址</button>
-                    </div>
-                `).join("");
-            }
-        }
-    } catch (e) {
-        setLanStatusBadge(false);
-    }
-}
-
-function isStaticCloudHost() {
-    const h = (window.location.hostname || "").toLowerCase();
-    return h.endsWith(".github.io") || h.endsWith(".netlify.app") || h.endsWith(".vercel.app") || h.endsWith(".pages.dev");
-}
-
-window.initLanSyncEngine = async function() {
-    if (isStaticCloudHost()) {
-        const dot = document.getElementById("lanShareStatusDot");
-        const label = document.getElementById("lanShareStatusLabel");
-        const banner = document.getElementById("lanShareConnectionBanner");
-        const container = document.getElementById("lanShareUrlsContainer");
-        if (dot && label) {
-            dot.textContent = "☁️";
-            label.textContent = "GitHub 云端网址";
-        }
-        if (banner) {
             banner.style.background = "#eff6ff";
             banner.style.borderColor = "#93c5fd";
             banner.style.color = "#1e40af";
-            banner.innerHTML = "☁️ <strong>当前运行于 GitHub Pages 云端网页环境！</strong> 您可将下方云端网址直接分享给全校老师在手机、平板或电脑上访问。";
+            banner.innerHTML = `☁️ <strong>校外互联网云端连接模式 (${cfg.owner}/${cfg.repo})</strong>：在下方粘贴您的 GitHub Token 并点击「💾 保存并连接云端」，即可激活全球校外 4G/5G 多设备双向实时同步！`;
         }
-        if (container) {
-            const cleanUrl = window.location.origin + window.location.pathname;
-            container.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: #fff; border: 2px solid #0284c7; border-radius: 8px; padding: 10px 14px;">
-                    <code id="cloudUrlItem_0" style="font-size: 16px; font-weight: 800; color: #0369a1; user-select: all; word-break: break-all;">${cleanUrl}</code>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="copyLanUrlText('cloudUrlItem_0')">📋 复制网址</button>
-                </div>
-            `;
+    }
+}
+
+function updateCloudModalInputs() {
+    const cfg = getCloudSyncConfig();
+    const ownerEl = document.getElementById("cloudGhOwnerInput");
+    const repoEl = document.getElementById("cloudGhRepoInput");
+    const tokenEl = document.getElementById("cloudGhTokenInput");
+    const urlTextEl = document.getElementById("primaryCloudUrlText");
+
+    if (ownerEl) ownerEl.value = cfg.owner;
+    if (repoEl) repoEl.value = cfg.repo;
+    if (tokenEl) tokenEl.value = cfg.token;
+    if (urlTextEl) {
+        urlTextEl.textContent = `https://${cfg.owner}.github.io/${cfg.repo}/`;
+    }
+}
+
+window.saveCloudSyncConfigAndTest = async function() {
+    const owner = (document.getElementById("cloudGhOwnerInput")?.value || "frankyheng85").trim();
+    const repo = (document.getElementById("cloudGhRepoInput")?.value || "heng").trim();
+    const token = (document.getElementById("cloudGhTokenInput")?.value || "").trim();
+
+    if (!owner || !repo) {
+        alert("请填写 GitHub 用户名和仓库名！");
+        return;
+    }
+    saveCloudSyncConfigObj({ owner, repo, token });
+    updateCloudModalInputs();
+
+    if (token) {
+        showToast("⏳ 正在连接 GitHub 云端数据库并同步数据...");
+        const pulled = await pullStateFromCloudServer(true, true);
+        const pushed = await pushStateToCloudServer(false);
+        if (pulled || pushed) {
+            startCloudPollTimer();
         }
+    } else {
+        setCloudStatusBadge(false, false);
+        showToast("ℹ️ 已保存仓库信息（未填写 Token，当前为本地独立存储模式）");
+    }
+};
+
+window.copyTeacherCloudAutoLink = function() {
+    const cfg = getCloudSyncConfig();
+    const baseUrl = `https://${cfg.owner}.github.io/${cfg.repo}/`;
+    if (!cfg.token) {
+        alert("⚠️ 请先在下方「2. 跨网络云端实时数据库配置」中粘贴您的 GitHub Token 并点击「💾 保存并连接云端」，然后再复制此专属链接！");
+        document.getElementById("cloudGhTokenInput")?.focus();
         return;
     }
 
-    await fetchLanServerInfo();
-    const ok = await pullStateFromLanServer(true, true);
+    const encodedCfg = encodeURIComponent(utf8ToBase64(JSON.stringify(cfg)));
+    const fullInviteUrl = `${baseUrl}#cloud=${encodedCfg}`;
 
-    if (lanPollInterval) clearInterval(lanPollInterval);
-    if (ok) {
-        lanPollInterval = setInterval(() => {
-            if (!document.hidden && lanServerConnected) {
-                pullStateFromLanServer(false, true);
-            }
-        }, 5000);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(fullInviteUrl).then(() => {
+            showToast("🎉 已复制【带云端同步通道的老师专属链接】！发给老师点击一次即可在校外 4G/5G 实时请假！");
+        }).catch(() => {
+            prompt("请复制以下带云端同步通道的专属链接发给老师：", fullInviteUrl);
+        });
+    } else {
+        prompt("请复制以下带云端同步通道的专属链接发给老师：", fullInviteUrl);
+    }
+};
+
+function startCloudPollTimer() {
+    if (cloudPollInterval) clearInterval(cloudPollInterval);
+    cloudPollInterval = setInterval(() => {
+        if (!document.hidden) {
+            pullStateFromCloudServer(false, true);
+        }
+    }, 12000);
+}
+
+window.initLanSyncEngine = async function() {
+    checkUrlHashForCloudInvite();
+    updateCloudModalInputs();
+
+    const cfg = getCloudSyncConfig();
+    if (cfg.owner && cfg.repo && (cfg.token || window.location.hostname.endsWith(".github.io"))) {
+        const ok = await pullStateFromCloudServer(true, true);
+        if (ok && cfg.token) {
+            startCloudPollTimer();
+        }
     }
 
     window.addEventListener("focus", () => {
-        if (lanServerConnected) {
-            pullStateFromLanServer(false, true);
+        const c = getCloudSyncConfig();
+        if (c.owner && c.repo && c.token) {
+            pullStateFromCloudServer(false, true);
         }
     });
 };
 
 window.openLanShareModal = async function() {
+    updateCloudModalInputs();
     const modal = document.getElementById("lanShareModal");
     if (modal) modal.style.display = "flex";
-    if (!isStaticCloudHost()) {
-        await fetchLanServerInfo();
-    }
 };
 
 window.closeLanShareModal = function() {
@@ -15464,27 +15661,24 @@ window.copyLanUrlText = function(elId) {
     const text = el.textContent.trim();
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-            showToast(`📋 已复制网址：${text}`);
+            showToast(`📋 已复制云端网址：${text}`);
         }).catch(() => {
-            prompt("请复制以下局域网访问网址：", text);
+            prompt("请复制以下校外云端访问网址：", text);
         });
     } else {
-        prompt("请复制以下局域网访问网址：", text);
+        prompt("请复制以下校外云端访问网址：", text);
     }
 };
 
 window.manualPullFromLanServer = async function() {
-    const ok = await pullStateFromLanServer(false, false);
+    const ok = await pullStateFromCloudServer(false, false);
     if (!ok) {
-        showToast("⚠️ 无法连接到本机局域网共享服务器，请确认服务器已启动");
+        showToast("⚠️ 无法从 GitHub 云端拉取数据，请确认已配置正确的仓库与 Token");
     }
 };
 
 window.manualPushToLanServer = async function() {
-    const ok = await pushStateToLanServer(false);
-    if (!ok) {
-        showToast("⚠️ 无法连接到本机局域网共享服务器，请确认服务器已启动");
-    }
+    await pushStateToCloudServer(false);
 };
 
 // ============================================================================
