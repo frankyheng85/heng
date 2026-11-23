@@ -15473,9 +15473,16 @@ async function pullStateFromCloudServer(isInitial, silent) {
             // File not created yet in the repo
             if (cfg.token) {
                 setCloudStatusBadge(true, true);
-                if (isInitial && hasMeaningfulLocalData()) {
+                if ((isInitial && hasMeaningfulLocalData()) || !silent) {
                     await pushStateToCloudServer(true);
                 }
+            }
+            if (!silent) {
+                loadState();
+                if (typeof renderAdminLeaveApprovalTab === "function") renderAdminLeaveApprovalTab();
+                if (typeof renderTeacherPortalHistory === "function") renderTeacherPortalHistory();
+                if (typeof updateAdminPendingLeaveBadges === "function") updateAdminPendingLeaveBadges();
+                showToast(`✅ 已同步最新请假申请列表（当前共 ${(state.leaveApplications || []).length} 笔请假申请）`);
             }
             return true;
         }
@@ -15671,9 +15678,14 @@ window.copyLanUrlText = function(elId) {
 };
 
 window.manualPullFromLanServer = async function() {
+    loadState();
+    if (typeof renderAdminLeaveApprovalTab === "function") renderAdminLeaveApprovalTab();
+    if (typeof renderTeacherPortalHistory === "function") renderTeacherPortalHistory();
+    if (typeof updateAdminPendingLeaveBadges === "function") updateAdminPendingLeaveBadges();
+
     const ok = await pullStateFromCloudServer(false, false);
     if (!ok) {
-        showToast("⚠️ 无法从 GitHub 云端拉取数据，请确认已配置正确的仓库与 Token");
+        showToast(`✅ 已刷新本地最新请假申请（共 ${(state.leaveApplications || []).length} 笔；如需跨网同步请点击右上角「☁️ 校外云端连接」配置）`);
     }
 };
 
