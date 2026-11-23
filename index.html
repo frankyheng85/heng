@@ -6750,38 +6750,92 @@ async function initEnterpriseStorage() {
         }
     }
 
-    // 2. Self-healing check: If LocalStorage was wiped or cleared, but IndexedDB has records, restore!
+    // 2. Self-healing check: If LocalStorage was wiped, cleared, or hit 5MB quota, restore complete data from IndexedDB!
     try {
         const db = await openIdbDatabase();
         if (db) {
+            let restoredFromIdb = false;
             const idbRecords = await idbGetKey(STORAGE_KEY_RECORDS);
-            if (Array.isArray(idbRecords) && idbRecords.length > 0 && (!state.records || state.records.length === 0)) {
+            const localRecLen = Array.isArray(state.records) ? state.records.length : 0;
+            if (Array.isArray(idbRecords) && idbRecords.length > localRecLen) {
                 state.records = idbRecords;
-                const idbLeaves = await idbGetKey(STORAGE_KEY_LEAVES);
-                if (Array.isArray(idbLeaves)) state.leaveEvents = idbLeaves;
-                const idbSwaps = await idbGetKey(STORAGE_KEY_SWAPS);
-                if (Array.isArray(idbSwaps)) state.swapRecords = idbSwaps;
-                const idbActs = await idbGetKey(STORAGE_KEY_CLASS_ACTIVITIES);
-                if (Array.isArray(idbActs)) state.classActivities = idbActs;
-                const idbLimits = await idbGetKey(STORAGE_KEY_TEACHER_LIMITS);
-                if (idbLimits) state.teacherLimits = idbLimits;
-                const idbEmails = await idbGetKey(STORAGE_KEY_TEACHER_EMAILS);
-                if (idbEmails) state.teacherEmails = idbEmails;
-                const idbPasswords = await idbGetKey(STORAGE_KEY_TEACHER_PASSWORDS);
-                if (idbPasswords) state.teacherPasswords = idbPasswords;
-                const idbNoSub = await idbGetKey(STORAGE_KEY_TEACHER_NO_SUB);
-                if (idbNoSub) state.teacherNoSub = idbNoSub;
-                const idbLeaveApps = await idbGetKey(STORAGE_KEY_LEAVE_APPLICATIONS);
-                if (Array.isArray(idbLeaveApps)) state.leaveApplications = idbLeaveApps;
-                const idbHome = await idbGetKey(STORAGE_KEY_HOMEROOM);
-                if (idbHome) state.homeroomMap = idbHome;
-                const idbClasses = await idbGetKey(STORAGE_KEY_CLASS_LIST);
-                if (Array.isArray(idbClasses)) state.classList = idbClasses;
-                const idbGrades = await idbGetKey(STORAGE_KEY_CLASS_GRADES);
-                if (idbGrades) state.classGrades = idbGrades;
-                const idbSched = await idbGetKey(STORAGE_KEY_CUSTOM_SCHEDULE);
-                if (idbSched && Object.keys(idbSched).length >= 50) TEACHERS_DATA = idbSched;
+                restoredFromIdb = true;
+            }
 
+            const idbLeaves = await idbGetKey(STORAGE_KEY_LEAVES);
+            if (Array.isArray(idbLeaves) && idbLeaves.length > (state.leaveEvents || []).length) {
+                state.leaveEvents = idbLeaves;
+                restoredFromIdb = true;
+            }
+
+            const idbSwaps = await idbGetKey(STORAGE_KEY_SWAPS);
+            if (Array.isArray(idbSwaps) && idbSwaps.length > (state.swapRecords || []).length) {
+                state.swapRecords = idbSwaps;
+                restoredFromIdb = true;
+            }
+
+            const idbActs = await idbGetKey(STORAGE_KEY_CLASS_ACTIVITIES);
+            if (Array.isArray(idbActs) && idbActs.length > (state.classActivities || []).length) {
+                state.classActivities = idbActs;
+                restoredFromIdb = true;
+            }
+
+            const idbLeaveApps = await idbGetKey(STORAGE_KEY_LEAVE_APPLICATIONS);
+            if (Array.isArray(idbLeaveApps) && idbLeaveApps.length > (state.leaveApplications || []).length) {
+                state.leaveApplications = idbLeaveApps;
+                restoredFromIdb = true;
+            }
+
+            const idbLimits = await idbGetKey(STORAGE_KEY_TEACHER_LIMITS);
+            if (idbLimits && Object.keys(idbLimits).length > Object.keys(state.teacherLimits || {}).length) {
+                state.teacherLimits = idbLimits;
+                restoredFromIdb = true;
+            }
+
+            const idbEmails = await idbGetKey(STORAGE_KEY_TEACHER_EMAILS);
+            if (idbEmails && Object.keys(idbEmails).length > Object.keys(state.teacherEmails || {}).length) {
+                state.teacherEmails = idbEmails;
+                restoredFromIdb = true;
+            }
+
+            const idbPasswords = await idbGetKey(STORAGE_KEY_TEACHER_PASSWORDS);
+            if (idbPasswords && Object.keys(idbPasswords).length > Object.keys(state.teacherPasswords || {}).length) {
+                state.teacherPasswords = idbPasswords;
+                restoredFromIdb = true;
+            }
+
+            const idbNoSub = await idbGetKey(STORAGE_KEY_TEACHER_NO_SUB);
+            if (idbNoSub && Object.keys(idbNoSub).length > Object.keys(state.teacherNoSub || {}).length) {
+                state.teacherNoSub = idbNoSub;
+                restoredFromIdb = true;
+            }
+
+            const idbHome = await idbGetKey(STORAGE_KEY_HOMEROOM);
+            if (idbHome && Object.keys(idbHome).length > Object.keys(state.homeroomMap || {}).length) {
+                state.homeroomMap = idbHome;
+                restoredFromIdb = true;
+            }
+
+            const idbClasses = await idbGetKey(STORAGE_KEY_CLASS_LIST);
+            if (Array.isArray(idbClasses) && idbClasses.length > (state.classList || []).length) {
+                state.classList = idbClasses;
+                restoredFromIdb = true;
+            }
+
+            const idbGrades = await idbGetKey(STORAGE_KEY_CLASS_GRADES);
+            if (idbGrades && Object.keys(idbGrades).length > Object.keys(state.classGrades || {}).length) {
+                state.classGrades = idbGrades;
+                restoredFromIdb = true;
+            }
+
+            const idbSched = await idbGetKey(STORAGE_KEY_CUSTOM_SCHEDULE);
+            if (idbSched && Object.keys(idbSched).length >= 20 && !localStorage.getItem(STORAGE_KEY_CUSTOM_SCHEDULE)) {
+                TEACHERS_DATA = idbSched;
+                restoredFromIdb = true;
+            }
+
+            if (restoredFromIdb) {
+                if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
                 try {
                     localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records));
                     localStorage.setItem(STORAGE_KEY_LEAVES, JSON.stringify(state.leaveEvents));
@@ -6796,7 +6850,7 @@ async function initEnterpriseStorage() {
                 renderHomeroomTab();
                 renderMonthlyReport();
                 renderDataManageTab();
-                showToast(`🛡️ 浏览器防丢保护生效：已从 IndexedDB 永久数据库安全还原 ${state.records.length} 笔历史档案！`);
+                showToast(`🛡️ 浏览器防丢保护生效：已从 IndexedDB 永久数据库安全还原 ${(state.records || []).length} 笔历史档案！`);
             }
             
             // Always ensure all current in-memory / localStorage data is mirrored & backed up into IndexedDB
@@ -6894,6 +6948,7 @@ async function updateStorageHealthIndicator() {
 }
 
 function saveRecords() {
+    if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
     try {
         localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records));
     } catch (e) {
@@ -6928,6 +6983,7 @@ function saveClassActivities() {
 }
 
 function saveSettings() {
+    if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
     try {
         localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings));
     } catch (e) {}
@@ -6935,6 +6991,7 @@ function saveSettings() {
 }
 
 function saveTeacherLimits() {
+    if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
     try {
         localStorage.setItem(STORAGE_KEY_TEACHER_LIMITS, JSON.stringify(state.teacherLimits));
     } catch (e) {}
@@ -7004,6 +7061,7 @@ function saveLeaveApplications() {
 }
 
 function saveHomeroomMap() {
+    if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
     try {
         localStorage.setItem(STORAGE_KEY_HOMEROOM, JSON.stringify(state.homeroomMap));
     } catch (e) {}
@@ -7305,17 +7363,30 @@ function checkConsecutiveClasses(occupiedArray, targetSeqIndex) {
     };
 }
 
+let _enrichedRecordsCache = null;
+
+function invalidateEnrichedRecordsCache() {
+    _enrichedRecordsCache = null;
+}
+
 function getEnrichedRecords() {
-    const sorted = [...state.records].sort((a, b) => {
-        if (a.date !== b.date) return a.date.localeCompare(b.date);
-        const idxA = PERIOD_DEFS.findIndex(p => p.key === a.periodKey);
-        const idxB = PERIOD_DEFS.findIndex(p => p.key === b.periodKey);
+    if (_enrichedRecordsCache && Array.isArray(_enrichedRecordsCache)) {
+        return _enrichedRecordsCache;
+    }
+
+    const periodOrderMap = {};
+    PERIOD_DEFS.forEach((p, idx) => { periodOrderMap[p.key] = idx; });
+
+    const sorted = [...(state.records || [])].sort((a, b) => {
+        if (a.date !== b.date) return String(a.date || "").localeCompare(String(b.date || ""));
+        const idxA = periodOrderMap[a.periodKey] ?? 99;
+        const idxB = periodOrderMap[b.periodKey] ?? 99;
         return idxA - idxB;
     });
 
     const weekCounter = {};
 
-    return sorted.map(rec => {
+    _enrichedRecordsCache = sorted.map(rec => {
         const weekStart = getWeekStart(rec.date);
         const key = `${rec.subTeacher}__${weekStart}`;
         weekCounter[key] = (weekCounter[key] || 0) + 1;
@@ -7341,6 +7412,8 @@ function getEnrichedRecords() {
             teachingFeeRM
         };
     });
+
+    return _enrichedRecordsCache;
 }
 
 // Get consolidated leave events for a given month (combining explicit leaveEvents and any legacy records)
@@ -8476,6 +8549,11 @@ window.saveLeaveOnlyRecord = function() {
     state.leaveTimeRange = timeRangeVal;
     state.leaveReason = reasonVal;
 
+    state.leaveEvents.forEach(e => {
+        if (e.date === state.selectedDate && e.teacher === state.absentTeacher && e.id && typeof markAdminItemDeleted === "function") {
+            markAdminItemDeleted(e.id);
+        }
+    });
     state.leaveEvents = state.leaveEvents.filter(e => !(e.date === state.selectedDate && e.teacher === state.absentTeacher));
     state.leaveEvents.push({
         id: `leave_${state.selectedDate}_${state.absentTeacher}_${Date.now()}`,
@@ -8507,7 +8585,17 @@ function saveCurrentAssignments() {
     state.leaveTimeRange = timeRangeVal;
     state.leaveReason = reasonVal;
 
+    state.records.forEach(r => {
+        if (r.date === state.selectedDate && r.absentTeacher === state.absentTeacher && r.id && typeof markAdminItemDeleted === "function") {
+            markAdminItemDeleted(r.id);
+        }
+    });
     state.records = state.records.filter(r => !(r.date === state.selectedDate && r.absentTeacher === state.absentTeacher));
+    state.leaveEvents.forEach(e => {
+        if (e.date === state.selectedDate && e.teacher === state.absentTeacher && e.id && typeof markAdminItemDeleted === "function") {
+            markAdminItemDeleted(e.id);
+        }
+    });
     state.leaveEvents = state.leaveEvents.filter(e => !(e.date === state.selectedDate && e.teacher === state.absentTeacher));
 
     let savedCount = 0;
@@ -8749,10 +8837,16 @@ window.deleteRecord = function(id) {
         return;
     }
 
+    if (typeof markAdminItemDeleted === "function") markAdminItemDeleted(id);
     state.records = state.records.filter(r => r.id !== id);
     if (target) {
         const remainingForTeacherOnDate = state.records.filter(r => r.date === target.date && r.absentTeacher === target.absentTeacher);
         if (remainingForTeacherOnDate.length === 0) {
+            state.leaveEvents.forEach(e => {
+                if (e.date === target.date && e.teacher === target.absentTeacher && e.id && typeof markAdminItemDeleted === "function") {
+                    markAdminItemDeleted(e.id);
+                }
+            });
             state.leaveEvents = state.leaveEvents.filter(e => !(e.date === target.date && e.teacher === target.absentTeacher));
             saveLeaveEvents();
         }
@@ -8767,6 +8861,14 @@ window.deleteRecord = function(id) {
 window.deleteLeaveEvent = function(dateStr, teacherName) {
     if (!confirmSystemDeletion(`确定要删除【${teacherName}】老师在【${dateStr}】的全部请假与派代课记录吗？\n（此操作将同时清除该老师当日的所有被代课/授课安排）`)) {
         return;
+    }
+    if (typeof markAdminItemDeleted === "function") {
+        state.leaveEvents.forEach(e => {
+            if (e.date === dateStr && e.teacher === teacherName && e.id) markAdminItemDeleted(e.id);
+        });
+        state.records.forEach(r => {
+            if (r.date === dateStr && r.absentTeacher === teacherName && r.id) markAdminItemDeleted(r.id);
+        });
     }
     state.leaveEvents = state.leaveEvents.filter(e => !(e.date === dateStr && e.teacher === teacherName));
     state.records = state.records.filter(r => !(r.date === dateStr && r.absentTeacher === teacherName));
@@ -11742,6 +11844,7 @@ function handleHomeroomFileUpload(e) {
 // ============================================================================
 
 function saveTeachersData() {
+    if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
     try {
         localStorage.setItem(STORAGE_KEY_CUSTOM_SCHEDULE, JSON.stringify(TEACHERS_DATA));
     } catch (e) {
@@ -13519,6 +13622,7 @@ window.deleteSwapRecord = function(swapId) {
     if (!confirmSystemDeletion(`确定要取消并删除这条课程对调记录吗？\n\n【对调明细】\n${desc}\n\n（取消后双方老师的课表将即时恢复为原定课程状态）`)) {
         return;
     }
+    if (typeof markAdminItemDeleted === "function") markAdminItemDeleted(swapId);
     state.swapRecords = state.swapRecords.filter(s => s.id !== swapId);
     saveSwapRecords();
     resetDraftForCurrentTeacher();
@@ -13803,6 +13907,7 @@ window.deleteClassActivity = function(actId) {
     if (!confirmSystemDeletion(`确定要删除这条班级活动免上课记录吗？\n\n【活动明细】\n${desc}\n\n（删除后相关任课老师在该时段将即时恢复为原定进班状态）`)) {
         return;
     }
+    if (typeof markAdminItemDeleted === "function") markAdminItemDeleted(actId);
     state.classActivities = state.classActivities.filter(a => a.id !== actId);
     saveClassActivities();
     resetDraftForCurrentTeacher();
@@ -14547,6 +14652,13 @@ window.confirmSaveMondayCcaAssignments = function() {
     // Save into state.records
     slotsToSave.forEach(slot => {
         const pDef = PERIOD_DEFS.find(p => p.key === slot.periodKey);
+        if (typeof markAdminItemDeleted === "function") {
+            (state.records || []).forEach(r => {
+                if (r.date === dateStr && r.className === slot.className && String(r.periodKey) === String(slot.periodKey) && r.id) {
+                    markAdminItemDeleted(r.id);
+                }
+            });
+        }
         state.records = (state.records || []).filter(r => !(r.date === dateStr && r.className === slot.className && String(r.periodKey) === String(slot.periodKey)));
 
         const newRec = {
@@ -14592,6 +14704,9 @@ window.clearMondayCcaReplacements = function() {
         return;
     }
 
+    if (typeof markAdminItemDeleted === "function") {
+        existingCca.forEach(r => { if (r.id) markAdminItemDeleted(r.id); });
+    }
     state.records = state.records.filter(r => !(r.date === dateStr && (r.isCcaReplacement || r.absentTeacher === "联课活动 (取消)")));
     saveRecords();
     renderAll();
@@ -15934,6 +16049,7 @@ const STORAGE_KEY_CLOUD_UPDATED_AT = "school_sub_cloud_updated_at_v1";
 const STORAGE_KEY_ADMIN_UPDATED_AT = "school_sub_admin_updated_at_v1";
 const STORAGE_KEY_CLOUD_CONFIG = "school_sub_github_cloud_cfg_v1";
 const STORAGE_KEY_DELETED_LEAVE_APPS = "school_sub_deleted_leave_apps_v1";
+const STORAGE_KEY_DELETED_ADMIN_ITEMS = "school_sub_deleted_admin_ids_v1";
 const CLOUD_DB_FILENAME = "cloud_shared_data.json";
 const ZERO_CONFIG_CLOUD_KEY = "school_sub_frankyheng85_heng_cloud_v1";
 const ZERO_CONFIG_CLOUD_URL = `https://textdb.dev/api/data/${ZERO_CONFIG_CLOUD_KEY}`;
@@ -15942,6 +16058,8 @@ let cloudSyncTimer = null;
 let cloudPollInterval = null;
 let cloudConnected = false;
 let cloudSyncInProgress = false;
+let cloudPushPending = false;
+let cloudInitialPullCompleted = false;
 let lastAppliedServerTimestamp = parseInt(localStorage.getItem(STORAGE_KEY_CLOUD_UPDATED_AT) || "0", 10) || 0;
 let lastLocalAdminWriteTimestamp = parseInt(localStorage.getItem(STORAGE_KEY_ADMIN_UPDATED_AT) || "0", 10) || 0;
 
@@ -15991,6 +16109,60 @@ window.markLeaveAppDeleted = function(appId) {
         saveDeletedLeaveAppIds(list);
     }
 };
+
+function getDeletedAdminItemIds() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_DELETED_ADMIN_ITEMS);
+        if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) return arr;
+        }
+    } catch (e) {}
+    return [];
+}
+
+function saveDeletedAdminItemIds(arr) {
+    try {
+        const unique = Array.from(new Set(arr)).slice(-2000);
+        localStorage.setItem(STORAGE_KEY_DELETED_ADMIN_ITEMS, JSON.stringify(unique));
+    } catch (e) {}
+}
+
+window.markAdminItemDeleted = function(itemId) {
+    if (!itemId) return;
+    const list = getDeletedAdminItemIds();
+    if (!list.includes(itemId)) {
+        list.push(itemId);
+        saveDeletedAdminItemIds(list);
+    }
+};
+
+function mergeArraysByIdWithTombstones(localArr, serverArr, deletedSet, serverWinsOnTie) {
+    const map = {};
+    (Array.isArray(serverArr) ? serverArr : []).forEach(item => {
+        if (!item) return;
+        const id = item.id;
+        if (!id) return;
+        if (deletedSet.has(id)) return;
+        map[id] = item;
+    });
+    (Array.isArray(localArr) ? localArr : []).forEach(item => {
+        if (!item) return;
+        const id = item.id;
+        if (!id) return;
+        if (deletedSet.has(id)) return;
+        if (!map[id]) {
+            map[id] = item;
+        } else {
+            const localTs = item.updatedAt || item.timestamp || item.createdAt || 0;
+            const serverTs = map[id].updatedAt || map[id].timestamp || map[id].createdAt || 0;
+            if (localTs > serverTs || (localTs === serverTs && !serverWinsOnTie)) {
+                map[id] = item;
+            }
+        }
+    });
+    return Object.values(map);
+}
 
 function getCloudSyncConfig() {
     let defaultOwner = "frankyheng85";
@@ -16080,6 +16252,7 @@ function buildLanSyncPayload(timestampOverride) {
         teacherNoSub: state.teacherNoSub || {},
         leaveApplications: state.leaveApplications || [],
         deletedAppIds: getDeletedLeaveAppIds(),
+        deletedAdminIds: getDeletedAdminItemIds(),
         homeroomMap: state.homeroomMap || {},
         classList: state.classList || [],
         classGrades: state.classGrades || {},
@@ -16169,38 +16342,45 @@ function mergeAndApplyCloudPayloadToLocal(serverData, silent) {
             idbSaveKey(STORAGE_KEY_TEACHER_PASSWORDS, state.teacherPasswords);
         }
 
-        // 4. Apply Admin data (records, leaveEvents, swapRecords, classActivities, settings, timetable) if server has newer admin state or local has none
+        // 4. Apply Admin data with ID-level Additive Union Merge (never loses records across index.html updates or multi-device edits!)
+        const localAdminDel = getDeletedAdminItemIds();
+        const serverAdminDel = Array.isArray(serverData.deletedAdminIds) ? serverData.deletedAdminIds : [];
+        const deletedAdminSet = new Set([...localAdminDel, ...serverAdminDel]);
+        saveDeletedAdminItemIds(Array.from(deletedAdminSet));
+
         const serverAdminTs = serverData.adminUpdatedAt || serverData.updatedAt || 0;
         const shouldApplyAdminState = (serverAdminTs >= lastLocalAdminWriteTimestamp) || !hasMeaningfulAdminData();
 
+        if (Array.isArray(serverData.records)) {
+            state.records = mergeArraysByIdWithTombstones(state.records, serverData.records, deletedAdminSet, shouldApplyAdminState);
+            if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
+            try { localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records)); } catch (e) {}
+            idbSaveKey(STORAGE_KEY_RECORDS, state.records);
+        }
+        if (Array.isArray(serverData.leaveEvents)) {
+            state.leaveEvents = mergeArraysByIdWithTombstones(state.leaveEvents, serverData.leaveEvents, deletedAdminSet, shouldApplyAdminState);
+            try { localStorage.setItem(STORAGE_KEY_LEAVES, JSON.stringify(state.leaveEvents)); } catch (e) {}
+            idbSaveKey(STORAGE_KEY_LEAVES, state.leaveEvents);
+        }
+        if (Array.isArray(serverData.swapRecords)) {
+            state.swapRecords = mergeArraysByIdWithTombstones(state.swapRecords, serverData.swapRecords, deletedAdminSet, shouldApplyAdminState);
+            try { localStorage.setItem(STORAGE_KEY_SWAPS, JSON.stringify(state.swapRecords)); } catch (e) {}
+            idbSaveKey(STORAGE_KEY_SWAPS, state.swapRecords);
+        }
+        if (Array.isArray(serverData.classActivities)) {
+            state.classActivities = mergeArraysByIdWithTombstones(state.classActivities, serverData.classActivities, deletedAdminSet, shouldApplyAdminState);
+            try { localStorage.setItem(STORAGE_KEY_CLASS_ACTIVITIES, JSON.stringify(state.classActivities)); } catch (e) {}
+            idbSaveKey(STORAGE_KEY_CLASS_ACTIVITIES, state.classActivities);
+        }
+
         if (shouldApplyAdminState) {
-            if (Array.isArray(serverData.records)) {
-                state.records = serverData.records;
-                try { localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records)); } catch (e) {}
-                idbSaveKey(STORAGE_KEY_RECORDS, state.records);
-            }
-            if (Array.isArray(serverData.leaveEvents)) {
-                state.leaveEvents = serverData.leaveEvents;
-                try { localStorage.setItem(STORAGE_KEY_LEAVES, JSON.stringify(state.leaveEvents)); } catch (e) {}
-                idbSaveKey(STORAGE_KEY_LEAVES, state.leaveEvents);
-            }
-            if (Array.isArray(serverData.swapRecords)) {
-                state.swapRecords = serverData.swapRecords;
-                try { localStorage.setItem(STORAGE_KEY_SWAPS, JSON.stringify(state.swapRecords)); } catch (e) {}
-                idbSaveKey(STORAGE_KEY_SWAPS, state.swapRecords);
-            }
-            if (Array.isArray(serverData.classActivities)) {
-                state.classActivities = serverData.classActivities;
-                try { localStorage.setItem(STORAGE_KEY_CLASS_ACTIVITIES, JSON.stringify(state.classActivities)); } catch (e) {}
-                idbSaveKey(STORAGE_KEY_CLASS_ACTIVITIES, state.classActivities);
-            }
             if (serverData.settings && typeof serverData.settings === "object") {
                 state.settings = { ...state.settings, ...serverData.settings };
                 try { localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings)); } catch (e) {}
                 idbSaveKey(STORAGE_KEY_SETTINGS, state.settings);
             }
             if (serverData.teacherLimits && typeof serverData.teacherLimits === "object" && Object.keys(serverData.teacherLimits).length > 0) {
-                state.teacherLimits = serverData.teacherLimits;
+                state.teacherLimits = { ...(state.teacherLimits || {}), ...serverData.teacherLimits };
                 try { localStorage.setItem(STORAGE_KEY_TEACHER_LIMITS, JSON.stringify(state.teacherLimits)); } catch (e) {}
                 idbSaveKey(STORAGE_KEY_TEACHER_LIMITS, state.teacherLimits);
             }
@@ -16210,7 +16390,7 @@ function mergeAndApplyCloudPayloadToLocal(serverData, silent) {
                 idbSaveKey(STORAGE_KEY_TEACHER_NO_SUB, state.teacherNoSub);
             }
             if (serverData.teacherEmails && typeof serverData.teacherEmails === "object" && Object.keys(serverData.teacherEmails).length > 0) {
-                state.teacherEmails = serverData.teacherEmails;
+                state.teacherEmails = { ...(state.teacherEmails || {}), ...serverData.teacherEmails };
                 try { localStorage.setItem(STORAGE_KEY_TEACHER_EMAILS, JSON.stringify(state.teacherEmails)); } catch (e) {}
                 idbSaveKey(STORAGE_KEY_TEACHER_EMAILS, state.teacherEmails);
             }
@@ -16225,15 +16405,16 @@ function mergeAndApplyCloudPayloadToLocal(serverData, silent) {
                 idbSaveKey(STORAGE_KEY_CLASS_LIST, state.classList);
             }
             if (serverData.classGrades && typeof serverData.classGrades === "object" && Object.keys(serverData.classGrades).length > 0) {
-                state.classGrades = serverData.classGrades;
+                state.classGrades = { ...(state.classGrades || {}), ...serverData.classGrades };
                 try { localStorage.setItem(STORAGE_KEY_CLASS_GRADES, JSON.stringify(state.classGrades)); } catch (e) {}
                 idbSaveKey(STORAGE_KEY_CLASS_GRADES, state.classGrades);
             }
-            if (serverData.customSchedule && typeof serverData.customSchedule === "object" && Object.keys(serverData.customSchedule).length >= 30) {
+            if (serverData.customSchedule && typeof serverData.customSchedule === "object" && Object.keys(serverData.customSchedule).length >= 20) {
                 TEACHERS_DATA = serverData.customSchedule;
                 try { localStorage.setItem(STORAGE_KEY_CUSTOM_SCHEDULE, JSON.stringify(TEACHERS_DATA)); } catch (e) {}
                 idbSaveKey(STORAGE_KEY_CUSTOM_SCHEDULE, TEACHERS_DATA);
             }
+            if (typeof invalidateEnrichedRecordsCache === "function") invalidateEnrichedRecordsCache();
             if (serverAdminTs > lastLocalAdminWriteTimestamp) {
                 lastLocalAdminWriteTimestamp = serverAdminTs;
                 try { localStorage.setItem(STORAGE_KEY_ADMIN_UPDATED_AT, String(serverAdminTs)); } catch (e) {}
@@ -16359,8 +16540,12 @@ async function fetchZeroConfigCloudState() {
 }
 
 async function pushStateToCloudServer(silent) {
-    if (cloudSyncInProgress) return false;
+    if (cloudSyncInProgress) {
+        cloudPushPending = true;
+        return false;
+    }
     cloudSyncInProgress = true;
+    cloudPushPending = false;
 
     try {
         // 1. Read-Before-Write Merge: pull latest from cloud first so we never overwrite another teacher's newly submitted leave application!
@@ -16423,6 +16608,12 @@ async function pushStateToCloudServer(silent) {
         }
     } finally {
         cloudSyncInProgress = false;
+        if (cloudPushPending) {
+            cloudPushPending = false;
+            setTimeout(() => {
+                pushStateToCloudServer(true);
+            }, 200);
+        }
     }
     return false;
 }
@@ -16462,6 +16653,8 @@ async function pullStateFromCloudServer(isInitial, silent) {
     } catch (e) {
         setCloudStatusBadge(false, false);
         return false;
+    } finally {
+        if (isInitial) cloudInitialPullCompleted = true;
     }
 }
 
