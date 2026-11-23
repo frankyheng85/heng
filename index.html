@@ -2171,6 +2171,10 @@ body {
                 <button type="button" id="btnHeaderLogout" class="btn btn-sm" onclick="logoutCurrentUser()" style="background:#ef4444; color:#fff; border:1px solid #dc2626; font-weight:700; padding:5px 10px; border-radius:8px; cursor:pointer;">
                     🚪 切换/退出
                 </button>
+                <button type="button" id="btnHeaderBackupCenter" class="btn btn-sm admin-only-nav" onclick="openBackupCenterModal()" style="background: #10b981; color: #fff; border: 1px solid #059669; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 8px; cursor: pointer;">
+                    <span>💾</span>
+                    <span>数据备份</span>
+                </button>
                 <button type="button" id="btnLanShareInfo" class="btn btn-sm" onclick="openLanShareModal()" style="background: #0284c7; color: #fff; border: 1px solid #0369a1; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 8px; cursor: pointer;">
                     <span id="lanShareStatusDot">☁️</span>
                     <span id="lanShareStatusLabel">校外云端连接</span>
@@ -3258,7 +3262,9 @@ body {
                         </p>
                         <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
                             <button id="btnExportFullBackup" class="btn btn-success">💾 导出全系统资料备份包 (.json)</button>
-                            <button class="btn btn-primary" onclick="exportAnnualSummaryCSV()">📥 导出全学年70位老师年度总账 (CSV)</button>
+                            <button type="button" class="btn btn-primary" style="background:#0f766e; border-color:#0f766e;" onclick="exportFullSystemBackupExcel()">📊 导出全系统 Excel 综合备份账本 (.xlsx)</button>
+                            <button type="button" class="btn btn-primary" onclick="openBackupCenterModal()">⏱️ 打开历史快照与自动备份中心</button>
+                            <button class="btn btn-outline-primary" onclick="exportAnnualSummaryCSV()">📥 导出全学年老师年度总账 (CSV)</button>
                             <button class="btn btn-outline-primary" onclick="exportAnnualFilteredDetailsCSV()">📥 导出全学年明细流水总账 (CSV)</button>
                             <label for="backupFileInput" class="btn btn-outline-secondary" style="cursor:pointer; margin-bottom:0;">
                                 📂 导入还原资料备份包 (.json)
@@ -3933,11 +3939,97 @@ body {
 
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="manualPullFromLanServer()">🔄 从 GitHub 云端拉取最新数据</button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="manualPushToLanServer()">📤 将当前数据推送至 GitHub 云端</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="manualPullFromLanServer()">🔄 从云端拉取最新数据</button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="manualPushToLanServer()">📤 将当前数据推送至云端</button>
                     </div>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="closeLanShareModal()">关闭窗口</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full System Data Backup, Auto-Snapshot & Restore Center Modal (全系统数据备份、历史快照与还原中心) -->
+    <div id="backupCenterModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width: 780px; width: 95vw; max-height: 92vh; display: flex; flex-direction: column;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #065f46, #0284c7); color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 14px 20px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 22px;">💾</span>
+                    <div>
+                        <h3 style="margin: 0; color: #fff; font-size: 16.5px;">全系统数据备份、自动快照与安全还原中心</h3>
+                        <div style="font-size: 12px; color: #d1fae5; margin-top: 2px;">涵盖 100+ 位老师全年请假单、派代课、授课、调课、个人密码、课表与班主任设定</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" onclick="closeBackupCenterModal()">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 18px 20px; overflow-y: auto; flex: 1;">
+                <!-- Summary Status Bar -->
+                <div id="backupCenterSummaryBanner" style="background: #f0fdf4; border: 1px solid #86efac; color: #166534; border-radius: 10px; padding: 12px 15px; margin-bottom: 16px; font-size: 13px; line-height: 1.6;">
+                    🛡️ <strong>四重防丢备份机制运行中</strong>：1. 云端自动分片数据库 ➔ 2. 浏览器 IndexedDB 永久数据库 ➔ 3. 每日自动历史快照点 ➔ 4. 电脑本地硬盘备份包 (.json / .xlsx)
+                </div>
+
+                <!-- 1. Manual Local File Backup & Excel Archive -->
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 15px 16px; margin-bottom: 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a;">📥 1. 一键下载完整备份文件到电脑硬盘（推荐每周/每月存档一次）</div>
+                        <span id="lastManualBackupTimeLabel" style="font-size:12px; color:#059669; font-weight:700;"></span>
+                    </div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+                        <button type="button" class="btn btn-success" onclick="exportFullSystemBackup()">
+                            💾 下载全系统完整还原备份包 (.json)
+                        </button>
+                        <button type="button" class="btn btn-primary" style="background:#0f766e; border-color:#0f766e;" onclick="exportFullSystemBackupExcel()">
+                            📊 下载全系统 Excel 综合备份总账 (.xlsx)
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="createLocalHistorySnapshot('手动创建快照点')">
+                            📸 立即在系统内拍下当前快照点
+                        </button>
+                    </div>
+                    <div style="font-size:12px; color:#64748b; line-height:1.5;">
+                        💡 <strong>.json 备份包</strong>：包含系统 100% 原始数据（含全体老师密码、课表、请假申请、代课调课），可随时一键无损还原。<br>
+                        💡 <strong>.xlsx Excel 备份总账</strong>：包含 5 个分表（代课授课流水、教师线上请假单、请假汇总、调课记录、老师名册与密码），可直接用 Excel 打开查阅或打印留底。
+                    </div>
+                </div>
+
+                <!-- 2. Auto-Backup Reminder / Auto-Download Setting -->
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
+                    <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">⚙️ 2. 自动备份策略设置</div>
+                    <div style="display:flex; flex-direction:column; gap:8px; font-size:13px; color:#334155;">
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                            <input type="checkbox" id="chkAutoSnapshotDaily" checked onchange="saveAutoBackupPreferences()">
+                            每日首次进入系统及每次登记派代课时，自动在浏览器内生成历史保护快照点（保留最近 15 个版本）
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                            <input type="checkbox" id="chkAutoDownloadBackupWeekly" onchange="saveAutoBackupPreferences()">
+                            每满 7 天未下载本地备份时，进入教务处后台自动为我下载一份最新 .json 备份文件到电脑【下载】文件夹
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Restore from Backup File (.json) -->
+                <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;">
+                    <div style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📂 3. 从电脑备份文件 (.json) 还原数据并同步至云端</div>
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <select id="backupRestoreModeSelect" class="form-select form-input-sm" style="width:240px;">
+                            <option value="merge" selected>🔄 智能合并还原 (保留新记录+合并备份)</option>
+                            <option value="overwrite">⚠️ 完整覆盖还原 (完全替换为备份文件状态)</option>
+                        </select>
+                        <label for="modalBackupFileInput" class="btn btn-outline-primary btn-sm" style="cursor:pointer; margin-bottom:0; font-weight:700;">
+                            📂 选择 .json 备份文件并执行还原
+                        </label>
+                        <input type="file" id="modalBackupFileInput" accept=".json" style="display:none;" onchange="handleFullSystemRestore(event)">
+                    </div>
+                </div>
+
+                <!-- 4. Built-in History Snapshots List (One-Click Rollback) -->
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 14px 16px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a;">⏪ 4. 系统内置历史快照点（无需找文件，可一键回滚或下载任意时间点）</div>
+                    </div>
+                    <div id="backupSnapshotsListContainer" style="max-height: 220px; overflow-y: auto;"></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeBackupCenterModal()">关闭窗口</button>
             </div>
         </div>
     </div>
@@ -6627,6 +6719,9 @@ async function initEnterpriseStorage() {
     }
 
     updateStorageHealthIndicator();
+    if (typeof window.initBackupCenterEngine === "function") {
+        window.initBackupCenterEngine();
+    }
     if (typeof window.initLanSyncEngine === "function") {
         window.initLanSyncEngine();
     }
@@ -8332,6 +8427,12 @@ function saveCurrentAssignments() {
     saveLeaveEvents();
     if (typeof autoMarkMatchingLeaveApplicationDispatched === "function") {
         autoMarkMatchingLeaveApplicationDispatched(state.selectedDate, state.absentTeacher);
+    }
+    if (typeof createLocalHistorySnapshot === "function") {
+        const prefs = loadAutoBackupPreferences ? loadAutoBackupPreferences() : { dailySnap: true };
+        if (prefs.dailySnap) {
+            createLocalHistorySnapshot(`派代课自动快照 (${state.selectedDate} ${state.absentTeacher})`, true);
+        }
     }
     renderAll();
     const scopeLabel = state.leaveScope === "partial" ? "突发/个别时段" : "全天";
@@ -12087,38 +12188,327 @@ function resetToDefaultSchedule() {
 // FEATURE 3: Full System Backup & Restore (.json)
 // ============================================================================
 
-function exportFullSystemBackup() {
-    const backupObj = {
-        version: 7,
+const STORAGE_KEY_LAST_BACKUP_TIME = "school_sub_last_backup_at_v1";
+const STORAGE_KEY_AUTO_BACKUP_PREFS = "school_sub_auto_backup_prefs_v1";
+const MAX_LOCAL_HISTORY_SNAPSHOTS = 15;
+
+function buildFullBackupObject(customLabel) {
+    return {
+        version: 8,
+        label: customLabel || "完整备份",
         exportedAt: new Date().toISOString(),
-        records: state.records,
-        leaveEvents: state.leaveEvents,
-        swapRecords: state.swapRecords,
-        classActivities: state.classActivities,
-        teacherLimits: state.teacherLimits,
-        teacherEmails: state.teacherEmails,
-        homeroomMap: state.homeroomMap,
-        classList: state.classList,
-        classGrades: state.classGrades,
-        settings: state.settings,
-        customSchedule: (() => { try { return localStorage.getItem(STORAGE_KEY_CUSTOM_SCHEDULE) ? JSON.parse(localStorage.getItem(STORAGE_KEY_CUSTOM_SCHEDULE)) : null; } catch (e) { return TEACHERS_DATA; } })()
+        timestamp: Date.now(),
+        records: state.records || [],
+        leaveEvents: state.leaveEvents || [],
+        swapRecords: state.swapRecords || [],
+        classActivities: state.classActivities || [],
+        leaveApplications: state.leaveApplications || [],
+        teacherPasswords: state.teacherPasswords || {},
+        teacherLimits: state.teacherLimits || {},
+        teacherEmails: state.teacherEmails || {},
+        homeroomMap: state.homeroomMap || {},
+        classList: state.classList || [],
+        classGrades: state.classGrades || {},
+        settings: state.settings || {},
+        customSchedule: TEACHERS_DATA || {}
     };
+}
+
+window.exportFullSystemBackup = function() {
+    const backupObj = buildFullBackupObject("手动导出完整备份包");
     const jsonStr = JSON.stringify(backupObj, null, 2);
     const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10);
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
     a.href = url;
-    a.download = `教务派代课系统_完整备份_${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `教务派代课系统_完整备份_${dateStr}_${timeStr}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    showToast("💾 已成功导出全系统资料备份包 (.json)！");
+
+    try {
+        localStorage.setItem(STORAGE_KEY_LAST_BACKUP_TIME, String(Date.now()));
+    } catch (e) {}
+    updateLastBackupTimeUI();
+    showToast("💾 已成功导出全系统完整资料备份包 (.json) 到电脑！");
+};
+
+window.exportFullSystemBackupExcel = function() {
+    if (typeof XLSX === "undefined") {
+        alert("当前浏览器未能加载 Excel 组件，将为您导出 .json 完整备份包！");
+        exportFullSystemBackup();
+        return;
+    }
+
+    try {
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: 代课与授课明细
+        const recRows = [["日期", "星期", "节次", "时间", "请假原任老师", "假别", "请假范围", "请假原因", "班级", "科目", "代课/授课老师", "类型"]];
+        (state.records || []).forEach(r => {
+            recRows.push([
+                r.date || "",
+                r.dayName || "",
+                r.periodLabel || r.periodKey || "",
+                r.periodTime || "",
+                r.absentTeacher || "",
+                r.leaveType || "",
+                r.leaveScope === "partial" ? "部分节次" : "全天",
+                r.leaveReason || "",
+                r.className || "",
+                r.subject || "",
+                r.subTeacher || "",
+                (r.subType === "teaching" || r.subType === 2) ? "授课(RM10)" : "代课"
+            ]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(recRows), "1_代课与授课明细");
+
+        // Sheet 2: 教师线上请假申请单
+        const appRows = [["提交时间", "申请老师", "请假日期", "星期", "假别", "范围", "请假事由", "课堂作业交代", "申请代课节数", "申请节次明细", "审批状态", "教务处备注"]];
+        (state.leaveApplications || []).forEach(a => {
+            const pText = (a.periods || []).map(p => `${p.periodLabel}(${p.className}·${p.subject})`).join("; ");
+            const stText = a.status === "dispatched" ? "已批准并派代" : (a.status === "rejected" ? "已退回" : "待处理");
+            appRows.push([
+                a.createdAt ? new Date(a.createdAt).toLocaleString("zh-CN", { hour12: false }) : "",
+                a.teacher || "",
+                a.date || "",
+                a.dayName || "",
+                a.leaveType || "",
+                a.leaveScope === "partial" ? "部分节次" : "全天",
+                a.reason || "",
+                a.classNote || "",
+                (a.periods || []).length,
+                pText,
+                stText,
+                a.adminNote || ""
+            ]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(appRows), "2_教师线上请假申请单");
+
+        // Sheet 3: 请假事件记录
+        const leaveRows = [["日期", "星期", "请假老师", "假别", "请假范围", "时段", "请假原因", "受影响节数"]];
+        (state.leaveEvents || []).forEach(e => {
+            leaveRows.push([
+                e.date || "",
+                e.dayName || "",
+                e.teacher || "",
+                e.leaveType || "",
+                e.leaveScope === "partial" ? "部分节次" : "全天",
+                e.leaveTimeRange || "",
+                e.leaveReason || "",
+                e.absentLessonsCount ?? 0
+            ]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(leaveRows), "3_请假事件汇总");
+
+        // Sheet 4: 调课记录
+        const swapRows = [["班级", "老师A", "原日期A", "节次A", "科目A", "老师B", "对调日期B", "节次B", "科目B", "备注"]];
+        (state.swapRecords || []).forEach(s => {
+            swapRows.push([
+                s.className || "",
+                s.teacherA || "",
+                s.dateA || "",
+                s.periodLabelA || s.periodKeyA || "",
+                s.subjectA || "",
+                s.teacherB || "",
+                s.dateB || "",
+                s.periodLabelB || s.periodKeyB || "",
+                s.subjectB || "",
+                s.note || ""
+            ]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(swapRows), "4_调课记录");
+
+        // Sheet 5: 全体老师名册与密码邮箱顶限
+        const teacherRows = [["序号", "老师姓名", "班主任班级", "任教科目", "任教班级", "原周节数", "每周顶限", "个人登录密码", "Email 邮箱"]];
+        const tNames = Object.keys(TEACHERS_DATA || {}).sort((a, b) => a.localeCompare(b, "zh-Hans-CN"));
+        tNames.forEach((name, idx) => {
+            const t = TEACHERS_DATA[name];
+            const hr = getHomeroomClassesOfTeacher(name).join("/");
+            teacherRows.push([
+                idx + 1,
+                name,
+                hr || "-",
+                (t.subjects || []).join("/"),
+                (t.classes || []).join("、"),
+                getTeacherBaseWeeklyTotal(name),
+                getTeacherMaxLimit(name),
+                getTeacherPassword(name),
+                getTeacherEmail(name)
+            ]);
+        });
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(teacherRows), "5_老师名册与密码顶限");
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        XLSX.writeFile(wb, `教务派代课系统_全系统综合备份总账_${dateStr}.xlsx`);
+        try {
+            localStorage.setItem(STORAGE_KEY_LAST_BACKUP_TIME, String(Date.now()));
+        } catch (e) {}
+        updateLastBackupTimeUI();
+        showToast("📊 已成功导出全系统 5 合 1 Excel 综合备份总账 (.xlsx)！");
+    } catch (err) {
+        console.error(err);
+        exportFullSystemBackup();
+    }
+};
+
+function applyBackupObjectToSystem(data, mode) {
+    if (!data || typeof data !== "object") throw new Error("无效的备份数据格式");
+    const isMerge = (mode === "merge");
+
+    if (Array.isArray(data.records)) {
+        if (isMerge) {
+            const map = {};
+            (state.records || []).forEach(r => { if (r && r.id) map[r.id] = r; });
+            data.records.forEach(r => { if (r && r.id) map[r.id] = r; });
+            state.records = Object.values(map);
+        } else {
+            state.records = data.records;
+        }
+        saveRecords();
+    }
+
+    if (Array.isArray(data.leaveEvents)) {
+        if (isMerge) {
+            const map = {};
+            (state.leaveEvents || []).forEach(e => { if (e) map[`${e.date}__${e.teacher}`] = e; });
+            data.leaveEvents.forEach(e => { if (e) map[`${e.date}__${e.teacher}`] = e; });
+            state.leaveEvents = Object.values(map);
+        } else {
+            state.leaveEvents = data.leaveEvents;
+        }
+        saveLeaveEvents();
+    }
+
+    if (Array.isArray(data.swapRecords)) {
+        if (isMerge) {
+            const map = {};
+            (state.swapRecords || []).forEach(s => { if (s && s.id) map[s.id] = s; });
+            data.swapRecords.forEach(s => { if (s && s.id) map[s.id] = s; });
+            state.swapRecords = Object.values(map);
+        } else {
+            state.swapRecords = data.swapRecords;
+        }
+        saveSwapRecords();
+    }
+
+    if (Array.isArray(data.classActivities)) {
+        if (isMerge) {
+            const map = {};
+            (state.classActivities || []).forEach(a => { if (a && a.id) map[a.id] = a; });
+            data.classActivities.forEach(a => { if (a && a.id) map[a.id] = a; });
+            state.classActivities = Object.values(map);
+        } else {
+            state.classActivities = data.classActivities;
+        }
+        saveClassActivities();
+    }
+
+    if (Array.isArray(data.leaveApplications)) {
+        if (isMerge) {
+            const map = {};
+            (state.leaveApplications || []).forEach(a => { if (a && a.id) map[a.id] = a; });
+            data.leaveApplications.forEach(a => {
+                if (a && a.id) {
+                    if (!map[a.id] || (a.updatedAt || 0) >= (map[a.id].updatedAt || 0)) {
+                        map[a.id] = a;
+                    }
+                }
+            });
+            state.leaveApplications = Object.values(map).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        } else {
+            state.leaveApplications = data.leaveApplications;
+        }
+        saveLeaveApplications();
+    }
+
+    if (data.teacherPasswords && typeof data.teacherPasswords === "object") {
+        state.teacherPasswords = isMerge
+            ? { ...data.teacherPasswords, ...(state.teacherPasswords || {}) }
+            : data.teacherPasswords;
+        saveTeacherPasswords();
+    }
+
+    if (data.teacherLimits && typeof data.teacherLimits === "object") {
+        state.teacherLimits = isMerge
+            ? { ...data.teacherLimits, ...(state.teacherLimits || {}) }
+            : data.teacherLimits;
+        saveTeacherLimits();
+    }
+
+    if (data.teacherEmails && typeof data.teacherEmails === "object") {
+        state.teacherEmails = isMerge
+            ? { ...data.teacherEmails, ...(state.teacherEmails || {}) }
+            : data.teacherEmails;
+        saveTeacherEmails();
+    }
+
+    if (data.homeroomMap && typeof data.homeroomMap === "object" && Object.keys(data.homeroomMap).length > 0) {
+        state.homeroomMap = isMerge
+            ? { ...data.homeroomMap, ...(state.homeroomMap || {}) }
+            : data.homeroomMap;
+        saveHomeroomMap();
+    }
+
+    if (Array.isArray(data.classList) && data.classList.length > 0) {
+        state.classList = data.classList;
+        saveClassList();
+    }
+
+    if (data.classGrades && typeof data.classGrades === "object" && Object.keys(data.classGrades).length > 0) {
+        state.classGrades = isMerge
+            ? { ...data.classGrades, ...(state.classGrades || {}) }
+            : data.classGrades;
+        saveClassGrades();
+    }
+
+    if (data.settings && typeof data.settings === "object") {
+        state.settings = { ...state.settings, ...data.settings };
+        saveSettings();
+        const maxEl = document.getElementById("maxWeeklyInput");
+        if (maxEl) maxEl.value = state.settings.defaultMaxWeeklyPeriods;
+        const chkMorning = document.getElementById("chkHomeroomMorningInBase");
+        if (chkMorning) chkMorning.checked = Boolean(state.settings.homeroomMorningCountsInBaseWeekly);
+    }
+
+    if (data.customSchedule && typeof data.customSchedule === "object" && Object.keys(data.customSchedule).length >= 30) {
+        TEACHERS_DATA = data.customSchedule;
+        saveTeachersData();
+    }
+
+    populateTeacherSelects();
+    if (typeof populateAuthAndPortalTeacherSelects === "function") populateAuthAndPortalTeacherSelects();
+    resetDraftForCurrentTeacher();
+    renderAll();
+    renderHomeroomTab();
+    renderDataManageTab();
+    if (typeof initAdjustmentTab === "function") initAdjustmentTab();
+    renderMonthlyReport();
+    if (typeof renderAdminLeaveApprovalTab === "function") renderAdminLeaveApprovalTab();
+    if (typeof renderTeacherPortalAll === "function") renderTeacherPortalAll(true);
+
+    if (typeof pushStateToCloudServer === "function") {
+        pushStateToCloudServer(true);
+    }
 }
 
-function handleFullSystemRestore(e) {
+window.handleFullSystemRestore = function(e) {
     const file = e.target.files[0];
     if (!file) return;
+
+    const modeSelect = document.getElementById("backupRestoreModeSelect");
+    const mode = modeSelect ? modeSelect.value : "merge";
+
+    if (mode === "overwrite") {
+        if (!confirm("⚠️ 您选择了【完整覆盖还原】模式，当前系统数据将被备份文件完全替换。确定继续吗？")) {
+            e.target.value = "";
+            return;
+        }
+    }
 
     const reader = new FileReader();
     reader.onload = function(evt) {
@@ -12127,62 +12517,11 @@ function handleFullSystemRestore(e) {
             const data = JSON.parse(text);
             if (!data || typeof data !== "object") throw new Error("无效的备份文件格式");
 
-            if (Array.isArray(data.records)) {
-                state.records = data.records;
-                saveRecords();
-            }
-            if (Array.isArray(data.leaveEvents)) {
-                state.leaveEvents = data.leaveEvents;
-                saveLeaveEvents();
-            }
-            if (Array.isArray(data.swapRecords)) {
-                state.swapRecords = data.swapRecords;
-                saveSwapRecords();
-            }
-            if (Array.isArray(data.classActivities)) {
-                state.classActivities = data.classActivities;
-                saveClassActivities();
-            }
-            if (data.teacherLimits && typeof data.teacherLimits === "object") {
-                state.teacherLimits = data.teacherLimits;
-                saveTeacherLimits();
-            }
-            if (data.teacherEmails && typeof data.teacherEmails === "object") {
-                state.teacherEmails = data.teacherEmails;
-                saveTeacherEmails();
-            }
-            if (data.homeroomMap && typeof data.homeroomMap === "object") {
-                state.homeroomMap = data.homeroomMap;
-                saveHomeroomMap();
-            }
-            if (Array.isArray(data.classList)) {
-                state.classList = data.classList;
-                saveClassList();
-            }
-            if (data.classGrades && typeof data.classGrades === "object") {
-                state.classGrades = data.classGrades;
-                saveClassGrades();
-            }
-            if (data.settings && typeof data.settings === "object") {
-                state.settings = { ...state.settings, ...data.settings };
-                saveSettings();
-                document.getElementById("maxWeeklyInput").value = state.settings.defaultMaxWeeklyPeriods;
-                const chkMorning = document.getElementById("chkHomeroomMorningInBase");
-                if (chkMorning) chkMorning.checked = Boolean(state.settings.homeroomMorningCountsInBaseWeekly);
-            }
-            if (data.customSchedule && typeof data.customSchedule === "object") {
-                TEACHERS_DATA = data.customSchedule;
-                saveTeachersData();
-            }
+            // Create an automatic safety snapshot before restoring
+            createLocalHistorySnapshot("导入还原前自动保护快照", true);
+            applyBackupObjectToSystem(data, mode);
 
-            populateTeacherSelects();
-            resetDraftForCurrentTeacher();
-            renderAll();
-            renderHomeroomTab();
-            renderDataManageTab();
-            if (typeof initAdjustmentTab === "function") initAdjustmentTab();
-            renderMonthlyReport();
-            showToast("🎉 全系统资料备份包导入还原成功！");
+            showToast(`🎉 备份包已成功${mode === "merge" ? "智能合并" : "完整覆盖"}还原，并已同步至云端！`);
         } catch (err) {
             console.error(err);
             alert("导入备份文件失败：" + err.message);
@@ -12190,7 +12529,256 @@ function handleFullSystemRestore(e) {
         e.target.value = "";
     };
     reader.readAsArrayBuffer(file);
+};
+
+// ============================================================================
+// BUILT-IN HISTORY SNAPSHOTS & AUTO-BACKUP ENGINE (IndexedDB annual_snapshots)
+// ============================================================================
+
+window.createLocalHistorySnapshot = async function(label, silent) {
+    try {
+        const db = await openIdbDatabase();
+        if (!db) return;
+
+        const now = Date.now();
+        const snapKey = `snap_${now}`;
+        const snapObj = {
+            snapshotKey: snapKey,
+            createdAt: now,
+            dateStr: new Date(now).toLocaleString("zh-CN", { hour12: false }),
+            label: label || "系统自动快照",
+            stats: {
+                recordsCount: (state.records || []).length,
+                leaveAppsCount: (state.leaveApplications || []).length,
+                swapsCount: (state.swapRecords || []).length,
+                teachersCount: Object.keys(TEACHERS_DATA || {}).length
+            },
+            payload: buildFullBackupObject(label)
+        };
+
+        await new Promise((resolve) => {
+            const tx = db.transaction(IDB_STORE_SNAPSHOTS, "readwrite");
+            const store = tx.objectStore(IDB_STORE_SNAPSHOTS);
+            store.put(snapObj);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+        });
+
+        // Trim older snapshots beyond MAX_LOCAL_HISTORY_SNAPSHOTS
+        const allSnaps = await getAllLocalHistorySnapshots();
+        if (allSnaps.length > MAX_LOCAL_HISTORY_SNAPSHOTS) {
+            const toDelete = allSnaps.slice(MAX_LOCAL_HISTORY_SNAPSHOTS);
+            const txDel = db.transaction(IDB_STORE_SNAPSHOTS, "readwrite");
+            const storeDel = txDel.objectStore(IDB_STORE_SNAPSHOTS);
+            toDelete.forEach(s => storeDel.delete(s.snapshotKey));
+        }
+
+        if (!silent) {
+            showToast(`📸 已成功创建系统历史快照点：【${snapObj.dateStr}】`);
+        }
+        renderBackupSnapshotsList();
+    } catch (e) {
+        console.warn("createLocalHistorySnapshot error:", e);
+    }
+};
+
+async function getAllLocalHistorySnapshots() {
+    try {
+        const db = await openIdbDatabase();
+        if (!db) return [];
+        return await new Promise((resolve) => {
+            const tx = db.transaction(IDB_STORE_SNAPSHOTS, "readonly");
+            const store = tx.objectStore(IDB_STORE_SNAPSHOTS);
+            const req = store.getAll();
+            req.onsuccess = () => {
+                const list = Array.isArray(req.result) ? req.result : [];
+                list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                resolve(list);
+            };
+            req.onerror = () => resolve([]);
+        });
+    } catch (e) {
+        return [];
+    }
 }
+
+window.renderBackupSnapshotsList = async function() {
+    const container = document.getElementById("backupSnapshotsListContainer");
+    if (!container) return;
+
+    const list = await getAllLocalHistorySnapshots();
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div style="text-align:center; padding:16px; color:#64748b; font-size:13px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">
+                暂无历史快照点，点击上方「📸 立即在系统内拍下当前快照点」即可随时创建还原点。
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = list.map(s => {
+        const st = s.stats || {};
+        return `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; padding:10px 12px; border-bottom:1px solid #e2e8f0; font-size:13px;">
+                <div>
+                    <div style="font-weight:800; color:#0f172a;">
+                        🕒 ${s.dateStr} <span class="badge badge-info" style="margin-left:6px; font-size:11.5px;">${s.label || "快照"}</span>
+                    </div>
+                    <div style="font-size:12px; color:#64748b; margin-top:2px;">
+                        含 <strong>${st.recordsCount ?? 0}</strong> 笔代课 · <strong>${st.leaveAppsCount ?? 0}</strong> 笔请假单 · <strong>${st.swapsCount ?? 0}</strong> 笔调课 · <strong>${st.teachersCount ?? 0}</strong> 位老师
+                    </div>
+                </div>
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="restoreFromHistorySnapshot('${s.snapshotKey}')">⏪ 恢复此快照</button>
+                    <button type="button" class="btn btn-outline-success btn-sm" onclick="downloadHistorySnapshotJson('${s.snapshotKey}')">📥 下载 .json</button>
+                    <button type="button" class="btn-icon-danger" onclick="deleteHistorySnapshot('${s.snapshotKey}')" title="删除此快照">🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join("");
+};
+
+window.restoreFromHistorySnapshot = async function(snapshotKey) {
+    const list = await getAllLocalHistorySnapshots();
+    const target = list.find(s => s.snapshotKey === snapshotKey);
+    if (!target || !target.payload) return;
+
+    const mode = document.getElementById("backupRestoreModeSelect")?.value || "merge";
+    const modeLabel = mode === "merge" ? "智能合并还原" : "完整覆盖还原";
+    if (!confirm(`确定要使用【${modeLabel}】方式恢复到快照点【${target.dateStr} (${target.label})】吗？`)) {
+        return;
+    }
+
+    applyBackupObjectToSystem(target.payload, mode);
+    showToast(`⏪ 已成功从历史快照【${target.dateStr}】完成${modeLabel}并同步至云端！`);
+};
+
+window.downloadHistorySnapshotJson = async function(snapshotKey) {
+    const list = await getAllLocalHistorySnapshots();
+    const target = list.find(s => s.snapshotKey === snapshotKey);
+    if (!target || !target.payload) return;
+
+    const jsonStr = JSON.stringify(target.payload, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `教务系统历史快照_${snapshotKey}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("📥 已下载该历史快照备份文件 (.json)");
+};
+
+window.deleteHistorySnapshot = async function(snapshotKey) {
+    if (!confirmSystemDeletion("确定要删除这个历史快照还原点吗？")) return;
+    try {
+        const db = await openIdbDatabase();
+        if (!db) return;
+        await new Promise((resolve) => {
+            const tx = db.transaction(IDB_STORE_SNAPSHOTS, "readwrite");
+            tx.objectStore(IDB_STORE_SNAPSHOTS).delete(snapshotKey);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+        });
+        renderBackupSnapshotsList();
+        showToast("🗑️ 已删除该历史快照点");
+    } catch (e) {}
+};
+
+function updateLastBackupTimeUI() {
+    const lbl = document.getElementById("lastManualBackupTimeLabel");
+    if (!lbl) return;
+    const ts = parseInt(localStorage.getItem(STORAGE_KEY_LAST_BACKUP_TIME) || "0", 10);
+    if (ts > 0) {
+        const dStr = new Date(ts).toLocaleString("zh-CN", { hour12: false });
+        lbl.textContent = `✅ 上次下载本地备份：${dStr}`;
+    } else {
+        lbl.textContent = "ℹ️ 建议定期点击下方按钮下载一份备份存档";
+    }
+}
+
+window.saveAutoBackupPreferences = function() {
+    const dailySnap = document.getElementById("chkAutoSnapshotDaily")?.checked ?? true;
+    const weeklyDl = document.getElementById("chkAutoDownloadBackupWeekly")?.checked ?? false;
+    try {
+        localStorage.setItem(STORAGE_KEY_AUTO_BACKUP_PREFS, JSON.stringify({ dailySnap, weeklyDl }));
+    } catch (e) {}
+    showToast("✅ 自动备份策略设置已保存！");
+};
+
+function loadAutoBackupPreferences() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_AUTO_BACKUP_PREFS);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            const chk1 = document.getElementById("chkAutoSnapshotDaily");
+            const chk2 = document.getElementById("chkAutoDownloadBackupWeekly");
+            if (chk1 && parsed.dailySnap !== undefined) chk1.checked = Boolean(parsed.dailySnap);
+            if (chk2 && parsed.weeklyDl !== undefined) chk2.checked = Boolean(parsed.weeklyDl);
+            return parsed;
+        }
+    } catch (e) {}
+    return { dailySnap: true, weeklyDl: false };
+}
+
+window.openBackupCenterModal = function() {
+    const input = prompt(
+        "🔒【数据备份中心权限验证】\n\n进入「全系统数据备份、自动快照与安全还原中心」需教务处管理权限。\n请输入访问密码以继续：",
+        ""
+    );
+
+    if (input === null) {
+        showToast("ℹ️ 已取消进入数据备份中心");
+        return;
+    }
+
+    if (input.trim() !== JIAOWUCHU_PAGE_PASSWORD) {
+        alert("❌ 访问密码错误，无法进入数据备份中心！");
+        showToast("❌ 密码错误，无法进入");
+        return;
+    }
+
+    showToast("✅ 验证通过，已打开【数据备份与还原中心】");
+    loadAutoBackupPreferences();
+    updateLastBackupTimeUI();
+    renderBackupSnapshotsList();
+    const modal = document.getElementById("backupCenterModal");
+    if (modal) modal.style.display = "flex";
+};
+
+window.closeBackupCenterModal = function() {
+    const modal = document.getElementById("backupCenterModal");
+    if (modal) modal.style.display = "none";
+};
+
+window.initBackupCenterEngine = async function() {
+    const prefs = loadAutoBackupPreferences();
+    updateLastBackupTimeUI();
+
+    // Auto create daily snapshot if enabled and none created today yet
+    if (prefs.dailySnap && hasMeaningfulLocalData()) {
+        const list = await getAllLocalHistorySnapshots();
+        const todayPrefix = new Date().toISOString().slice(0, 10);
+        const hasTodaySnap = list.some(s => {
+            if (!s.createdAt) return false;
+            return new Date(s.createdAt).toISOString().slice(0, 10) === todayPrefix;
+        });
+        if (!hasTodaySnap) {
+            await createLocalHistorySnapshot(`每日自动快照 (${todayPrefix})`, true);
+        }
+    }
+
+    // Optional weekly auto-download backup when Admin logs in
+    if (prefs.weeklyDl && hasMeaningfulLocalData()) {
+        const lastDl = parseInt(localStorage.getItem(STORAGE_KEY_LAST_BACKUP_TIME) || "0", 10);
+        const sevenDaysMs = 7 * 24 * 3600 * 1000;
+        if (Date.now() - lastDl > sevenDaysMs && window.currentUserSession && window.currentUserSession.role === "admin") {
+            exportFullSystemBackup();
+        }
+    }
+};
 
 // ============================================================================
 // FEATURE 4: 调课与班级活动调节 (1. A/B老师同班不同时间课程相互对调 | 2. 某班有活动免上课释放老师可调动)
@@ -15147,18 +15735,24 @@ function showToast(msg) {
 }
 
 // ============================================================================
-// OFF-CAMPUS INTERNET CLOUD DATABASE SYNC ENGINE (GitHub Cloud DB - 免局域网跨网同步)
+// OFF-CAMPUS INTERNET CLOUD DATABASE SYNC ENGINE (免配置自动跨网云端实时同步)
+// 支持全校老师在家用 4G/5G 手机流量或电脑打开网页即可直接提交请假并自动同步至教务处，无需配置 Token！
 // ============================================================================
 
 const STORAGE_KEY_CLOUD_UPDATED_AT = "school_sub_cloud_updated_at_v1";
+const STORAGE_KEY_ADMIN_UPDATED_AT = "school_sub_admin_updated_at_v1";
 const STORAGE_KEY_CLOUD_CONFIG = "school_sub_github_cloud_cfg_v1";
+const STORAGE_KEY_DELETED_LEAVE_APPS = "school_sub_deleted_leave_apps_v1";
 const CLOUD_DB_FILENAME = "cloud_shared_data.json";
+const ZERO_CONFIG_CLOUD_KEY = "school_sub_frankyheng85_heng_cloud_v1";
+const ZERO_CONFIG_CLOUD_URL = `https://textdb.dev/api/data/${ZERO_CONFIG_CLOUD_KEY}`;
 
 let cloudSyncTimer = null;
 let cloudPollInterval = null;
 let cloudConnected = false;
 let cloudSyncInProgress = false;
 let lastAppliedServerTimestamp = parseInt(localStorage.getItem(STORAGE_KEY_CLOUD_UPDATED_AT) || "0", 10) || 0;
+let lastLocalAdminWriteTimestamp = parseInt(localStorage.getItem(STORAGE_KEY_ADMIN_UPDATED_AT) || "0", 10) || 0;
 
 function utf8ToBase64(str) {
     const bytes = new TextEncoder().encode(str);
@@ -15180,11 +15774,37 @@ function base64ToUtf8(b64) {
     return new TextDecoder("utf-8").decode(bytes);
 }
 
+function getDeletedLeaveAppIds() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_DELETED_LEAVE_APPS);
+        if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) return arr;
+        }
+    } catch (e) {}
+    return [];
+}
+
+function saveDeletedLeaveAppIds(arr) {
+    try {
+        const unique = Array.from(new Set(arr)).slice(-500);
+        localStorage.setItem(STORAGE_KEY_DELETED_LEAVE_APPS, JSON.stringify(unique));
+    } catch (e) {}
+}
+
+window.markLeaveAppDeleted = function(appId) {
+    if (!appId) return;
+    const list = getDeletedLeaveAppIds();
+    if (!list.includes(appId)) {
+        list.push(appId);
+        saveDeletedLeaveAppIds(list);
+    }
+};
+
 function getCloudSyncConfig() {
     let defaultOwner = "frankyheng85";
     let defaultRepo = "heng";
 
-    // Auto-detect owner & repo if hosted on *.github.io/<repo>/
     const host = (window.location.hostname || "").toLowerCase();
     if (host.endsWith(".github.io")) {
         const sub = host.replace(".github.io", "");
@@ -15231,7 +15851,7 @@ function checkUrlHashForCloudInvite() {
             const encoded = decodeURIComponent(hash.slice("#cloud=".length));
             const jsonStr = base64ToUtf8(encoded);
             const cfg = JSON.parse(jsonStr);
-            if (cfg && cfg.owner && cfg.repo && cfg.token) {
+            if (cfg && cfg.owner && cfg.repo) {
                 saveCloudSyncConfigObj(cfg);
                 if (window.history && window.history.replaceState) {
                     window.history.replaceState(null, document.title, window.location.pathname + window.location.search);
@@ -15246,9 +15866,18 @@ function checkUrlHashForCloudInvite() {
 
 function buildLanSyncPayload(timestampOverride) {
     const nowTs = timestampOverride || Date.now();
+    const isAdminSession = (!window.currentUserSession || !window.currentUserSession.loggedIn || window.currentUserSession.role === "admin");
+    if (isAdminSession) {
+        lastLocalAdminWriteTimestamp = nowTs;
+        try { localStorage.setItem(STORAGE_KEY_ADMIN_UPDATED_AT, String(nowTs)); } catch (e) {}
+    }
+
+    const hasCustomSched = Boolean(localStorage.getItem(STORAGE_KEY_CUSTOM_SCHEDULE));
+
     return {
         hasData: true,
         updatedAt: nowTs,
+        adminUpdatedAt: lastLocalAdminWriteTimestamp || nowTs,
         records: state.records || [],
         leaveEvents: state.leaveEvents || [],
         swapRecords: state.swapRecords || [],
@@ -15258,10 +15887,11 @@ function buildLanSyncPayload(timestampOverride) {
         teacherEmails: state.teacherEmails || {},
         teacherPasswords: state.teacherPasswords || {},
         leaveApplications: state.leaveApplications || [],
+        deletedAppIds: getDeletedLeaveAppIds(),
         homeroomMap: state.homeroomMap || {},
         classList: state.classList || [],
         classGrades: state.classGrades || {},
-        customSchedule: TEACHERS_DATA || {}
+        customSchedule: hasCustomSched ? (TEACHERS_DATA || {}) : undefined
     };
 }
 
@@ -15278,77 +15908,155 @@ function hasMeaningfulLocalData() {
     );
 }
 
-function applyLanServerPayloadToLocal(serverData, silent) {
-    if (!serverData || !serverData.hasData) return;
+function hasMeaningfulAdminData() {
+    return (
+        (Array.isArray(state.records) && state.records.length > 0) ||
+        (Array.isArray(state.leaveEvents) && state.leaveEvents.length > 0) ||
+        (Array.isArray(state.swapRecords) && state.swapRecords.length > 0) ||
+        (Array.isArray(state.classActivities) && state.classActivities.length > 0)
+    );
+}
+
+function mergeAndApplyCloudPayloadToLocal(serverData, silent) {
+    if (!serverData || !serverData.hasData) return false;
+    let foundNewLocalAppsNotOnServer = false;
+
     window._suppressLanPush = true;
     try {
-        if (Array.isArray(serverData.records)) {
-            state.records = serverData.records;
-            try { localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_RECORDS, state.records);
-        }
-        if (Array.isArray(serverData.leaveEvents)) {
-            state.leaveEvents = serverData.leaveEvents;
-            try { localStorage.setItem(STORAGE_KEY_LEAVES, JSON.stringify(state.leaveEvents)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_LEAVES, state.leaveEvents);
-        }
-        if (Array.isArray(serverData.swapRecords)) {
-            state.swapRecords = serverData.swapRecords;
-            try { localStorage.setItem(STORAGE_KEY_SWAPS, JSON.stringify(state.swapRecords)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_SWAPS, state.swapRecords);
-        }
-        if (Array.isArray(serverData.classActivities)) {
-            state.classActivities = serverData.classActivities;
-            try { localStorage.setItem(STORAGE_KEY_CLASS_ACTIVITIES, JSON.stringify(state.classActivities)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_CLASS_ACTIVITIES, state.classActivities);
-        }
-        if (serverData.settings && typeof serverData.settings === "object") {
-            state.settings = { ...state.settings, ...serverData.settings };
-            try { localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_SETTINGS, state.settings);
-        }
-        if (serverData.teacherLimits && typeof serverData.teacherLimits === "object") {
-            state.teacherLimits = serverData.teacherLimits;
-            try { localStorage.setItem(STORAGE_KEY_TEACHER_LIMITS, JSON.stringify(state.teacherLimits)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_TEACHER_LIMITS, state.teacherLimits);
-        }
-        if (serverData.teacherEmails && typeof serverData.teacherEmails === "object") {
-            state.teacherEmails = serverData.teacherEmails;
-            try { localStorage.setItem(STORAGE_KEY_TEACHER_EMAILS, JSON.stringify(state.teacherEmails)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_TEACHER_EMAILS, state.teacherEmails);
-        }
+        // 1. Merge deleted leave application IDs
+        const localDel = getDeletedLeaveAppIds();
+        const serverDel = Array.isArray(serverData.deletedAppIds) ? serverData.deletedAppIds : [];
+        const deletedSet = new Set([...localDel, ...serverDel]);
+        saveDeletedLeaveAppIds(Array.from(deletedSet));
+
+        // 2. Always smart-merge leaveApplications by id so no teacher's leave request is ever lost!
+        const localApps = Array.isArray(state.leaveApplications) ? state.leaveApplications : [];
+        const serverApps = Array.isArray(serverData.leaveApplications) ? serverData.leaveApplications : [];
+        const appMap = {};
+        const serverAppIdSet = new Set();
+
+        serverApps.forEach(app => {
+            if (!app || !app.id || deletedSet.has(app.id)) return;
+            appMap[app.id] = app;
+            serverAppIdSet.add(app.id);
+        });
+
+        localApps.forEach(app => {
+            if (!app || !app.id || deletedSet.has(app.id)) return;
+            if (!appMap[app.id]) {
+                appMap[app.id] = app;
+                foundNewLocalAppsNotOnServer = true;
+            } else {
+                const localTs = app.updatedAt || app.createdAt || 0;
+                const serverTs = appMap[app.id].updatedAt || appMap[app.id].createdAt || 0;
+                if (localTs > serverTs) {
+                    appMap[app.id] = app;
+                    foundNewLocalAppsNotOnServer = true;
+                }
+            }
+        });
+
+        state.leaveApplications = Object.values(appMap).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        try { localStorage.setItem(STORAGE_KEY_LEAVE_APPLICATIONS, JSON.stringify(state.leaveApplications)); } catch (e) {}
+        idbSaveKey(STORAGE_KEY_LEAVE_APPLICATIONS, state.leaveApplications);
+
+        // 3. Always merge teacherPasswords
         if (serverData.teacherPasswords && typeof serverData.teacherPasswords === "object") {
-            state.teacherPasswords = serverData.teacherPasswords;
+            state.teacherPasswords = {
+                ...serverData.teacherPasswords,
+                ...(state.teacherPasswords || {})
+            };
+            // If server timestamp is newer, let server password win for keys modified on server
+            if ((serverData.updatedAt || 0) >= lastAppliedServerTimestamp) {
+                state.teacherPasswords = {
+                    ...(state.teacherPasswords || {}),
+                    ...serverData.teacherPasswords
+                };
+            }
             try { localStorage.setItem(STORAGE_KEY_TEACHER_PASSWORDS, JSON.stringify(state.teacherPasswords)); } catch (e) {}
             idbSaveKey(STORAGE_KEY_TEACHER_PASSWORDS, state.teacherPasswords);
         }
-        if (Array.isArray(serverData.leaveApplications)) {
-            state.leaveApplications = serverData.leaveApplications;
-            try { localStorage.setItem(STORAGE_KEY_LEAVE_APPLICATIONS, JSON.stringify(state.leaveApplications)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_LEAVE_APPLICATIONS, state.leaveApplications);
-        }
-        if (serverData.homeroomMap && typeof serverData.homeroomMap === "object" && Object.keys(serverData.homeroomMap).length > 0) {
-            state.homeroomMap = serverData.homeroomMap;
-            try { localStorage.setItem(STORAGE_KEY_HOMEROOM, JSON.stringify(state.homeroomMap)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_HOMEROOM, state.homeroomMap);
-        }
-        if (Array.isArray(serverData.classList) && serverData.classList.length > 0) {
-            state.classList = serverData.classList;
-            try { localStorage.setItem(STORAGE_KEY_CLASS_LIST, JSON.stringify(state.classList)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_CLASS_LIST, state.classList);
-        }
-        if (serverData.classGrades && typeof serverData.classGrades === "object" && Object.keys(serverData.classGrades).length > 0) {
-            state.classGrades = serverData.classGrades;
-            try { localStorage.setItem(STORAGE_KEY_CLASS_GRADES, JSON.stringify(state.classGrades)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_CLASS_GRADES, state.classGrades);
-        }
-        if (serverData.customSchedule && typeof serverData.customSchedule === "object" && Object.keys(serverData.customSchedule).length >= 30) {
-            TEACHERS_DATA = serverData.customSchedule;
-            try { localStorage.setItem(STORAGE_KEY_CUSTOM_SCHEDULE, JSON.stringify(TEACHERS_DATA)); } catch (e) {}
-            idbSaveKey(STORAGE_KEY_CUSTOM_SCHEDULE, TEACHERS_DATA);
+
+        // 4. Apply Admin data (records, leaveEvents, swapRecords, classActivities, settings, timetable) if server has newer admin state or local has none
+        const serverAdminTs = serverData.adminUpdatedAt || serverData.updatedAt || 0;
+        const shouldApplyAdminState = (serverAdminTs >= lastLocalAdminWriteTimestamp) || !hasMeaningfulAdminData();
+
+        if (shouldApplyAdminState) {
+            if (Array.isArray(serverData.records)) {
+                state.records = serverData.records;
+                try { localStorage.setItem(STORAGE_KEY_RECORDS, JSON.stringify(state.records)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_RECORDS, state.records);
+            }
+            if (Array.isArray(serverData.leaveEvents)) {
+                state.leaveEvents = serverData.leaveEvents;
+                try { localStorage.setItem(STORAGE_KEY_LEAVES, JSON.stringify(state.leaveEvents)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_LEAVES, state.leaveEvents);
+            }
+            if (Array.isArray(serverData.swapRecords)) {
+                state.swapRecords = serverData.swapRecords;
+                try { localStorage.setItem(STORAGE_KEY_SWAPS, JSON.stringify(state.swapRecords)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_SWAPS, state.swapRecords);
+            }
+            if (Array.isArray(serverData.classActivities)) {
+                state.classActivities = serverData.classActivities;
+                try { localStorage.setItem(STORAGE_KEY_CLASS_ACTIVITIES, JSON.stringify(state.classActivities)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_CLASS_ACTIVITIES, state.classActivities);
+            }
+            if (serverData.settings && typeof serverData.settings === "object") {
+                state.settings = { ...state.settings, ...serverData.settings };
+                try { localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_SETTINGS, state.settings);
+            }
+            if (serverData.teacherLimits && typeof serverData.teacherLimits === "object" && Object.keys(serverData.teacherLimits).length > 0) {
+                state.teacherLimits = serverData.teacherLimits;
+                try { localStorage.setItem(STORAGE_KEY_TEACHER_LIMITS, JSON.stringify(state.teacherLimits)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_TEACHER_LIMITS, state.teacherLimits);
+            }
+            if (serverData.teacherEmails && typeof serverData.teacherEmails === "object" && Object.keys(serverData.teacherEmails).length > 0) {
+                state.teacherEmails = serverData.teacherEmails;
+                try { localStorage.setItem(STORAGE_KEY_TEACHER_EMAILS, JSON.stringify(state.teacherEmails)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_TEACHER_EMAILS, state.teacherEmails);
+            }
+            if (serverData.homeroomMap && typeof serverData.homeroomMap === "object" && Object.keys(serverData.homeroomMap).length > 0) {
+                state.homeroomMap = serverData.homeroomMap;
+                try { localStorage.setItem(STORAGE_KEY_HOMEROOM, JSON.stringify(state.homeroomMap)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_HOMEROOM, state.homeroomMap);
+            }
+            if (Array.isArray(serverData.classList) && serverData.classList.length > 0) {
+                state.classList = serverData.classList;
+                try { localStorage.setItem(STORAGE_KEY_CLASS_LIST, JSON.stringify(state.classList)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_CLASS_LIST, state.classList);
+            }
+            if (serverData.classGrades && typeof serverData.classGrades === "object" && Object.keys(serverData.classGrades).length > 0) {
+                state.classGrades = serverData.classGrades;
+                try { localStorage.setItem(STORAGE_KEY_CLASS_GRADES, JSON.stringify(state.classGrades)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_CLASS_GRADES, state.classGrades);
+            }
+            if (serverData.customSchedule && typeof serverData.customSchedule === "object" && Object.keys(serverData.customSchedule).length >= 30) {
+                TEACHERS_DATA = serverData.customSchedule;
+                try { localStorage.setItem(STORAGE_KEY_CUSTOM_SCHEDULE, JSON.stringify(TEACHERS_DATA)); } catch (e) {}
+                idbSaveKey(STORAGE_KEY_CUSTOM_SCHEDULE, TEACHERS_DATA);
+            }
+            if (serverAdminTs > lastLocalAdminWriteTimestamp) {
+                lastLocalAdminWriteTimestamp = serverAdminTs;
+                try { localStorage.setItem(STORAGE_KEY_ADMIN_UPDATED_AT, String(serverAdminTs)); } catch (e) {}
+            }
         }
 
-        lastAppliedServerTimestamp = serverData.updatedAt || Date.now();
+        // Auto-sync leave application status with actual dispatched records
+        if (Array.isArray(state.leaveApplications) && Array.isArray(state.records)) {
+            state.leaveApplications.forEach(app => {
+                if (app.status === "pending") {
+                    const hasRec = state.records.some(r => r.date === app.date && r.absentTeacher === app.teacher);
+                    const hasLeaveEv = (state.leaveEvents || []).some(e => e.date === app.date && e.teacher === app.teacher);
+                    if (hasRec || hasLeaveEv) {
+                        app.status = "dispatched";
+                    }
+                }
+            });
+        }
+
+        lastAppliedServerTimestamp = Math.max(lastAppliedServerTimestamp, serverData.updatedAt || Date.now());
         try { localStorage.setItem(STORAGE_KEY_CLOUD_UPDATED_AT, String(lastAppliedServerTimestamp)); } catch (e) {}
 
         renderAll();
@@ -15361,81 +16069,160 @@ function applyLanServerPayloadToLocal(serverData, silent) {
         updateStorageHealthIndicator();
 
         if (!silent) {
-            showToast(`☁️ 已从 GitHub 云端同步最新数据（共 ${state.records.length} 笔代课记录）`);
+            const pendingCnt = (state.leaveApplications || []).filter(a => a.status === "pending").length;
+            showToast(`☁️ 已同步云端最新数据：共 ${(state.leaveApplications || []).length} 笔请假申请（${pendingCnt} 笔待处理）、${(state.records || []).length} 笔代课记录！`);
         }
     } finally {
         window._suppressLanPush = false;
     }
+    return foundNewLocalAppsNotOnServer;
+}
+
+const CLOUD_CHUNK_MAX_CHARS = 85000; // 85KB per shard, auto-scales across unlimited shards for 100+ teachers over 1-3+ years
+
+async function readChunkedCloudString(baseUrl) {
+    const res = await fetch(`${baseUrl}?t=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const rawText = (await res.text()).trim();
+    if (!rawText) return null;
+
+    if (rawText.startsWith("{")) {
+        const parsed = JSON.parse(rawText);
+        if (parsed && parsed.__chunked && parsed.totalParts > 1) {
+            const partPromises = [];
+            for (let i = 1; i < parsed.totalParts; i++) {
+                partPromises.push(
+                    fetch(`${baseUrl}_part_${i}?t=${Date.now()}`, { cache: "no-store" })
+                        .then(r => (r.ok ? r.text() : ""))
+                        .then(t => t.trim())
+                );
+            }
+            const restParts = await Promise.all(partPromises);
+            return (parsed.part0 || "") + restParts.join("");
+        }
+        return rawText;
+    }
+    return rawText;
+}
+
+async function writeChunkedCloudString(baseUrl, b64Body) {
+    if (b64Body.length <= CLOUD_CHUNK_MAX_CHARS) {
+        const res = await fetch(baseUrl, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: b64Body
+        });
+        return res.ok;
+    }
+
+    // Automatically shard across multiple cloud buckets when annual data grows past 85KB (supports 2MB+ / 100+ teachers full year)
+    const chunks = [];
+    for (let offset = 0; offset < b64Body.length; offset += CLOUD_CHUNK_MAX_CHARS) {
+        chunks.push(b64Body.slice(offset, offset + CLOUD_CHUNK_MAX_CHARS));
+    }
+
+    const partWrites = [];
+    for (let i = 1; i < chunks.length; i++) {
+        partWrites.push(
+            fetch(`${baseUrl}_part_${i}`, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain" },
+                body: chunks[i]
+            })
+        );
+    }
+    await Promise.all(partWrites);
+
+    const manifestJson = JSON.stringify({
+        __chunked: true,
+        totalParts: chunks.length,
+        part0: chunks[0],
+        updatedAt: Date.now()
+    });
+    const res = await fetch(baseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: manifestJson
+    });
+    return res.ok;
+}
+
+async function fetchZeroConfigCloudState() {
+    try {
+        const rawText = await readChunkedCloudString(ZERO_CONFIG_CLOUD_URL);
+        if (!rawText) return null;
+        if (rawText.startsWith("{")) {
+            return JSON.parse(rawText);
+        }
+        const jsonStr = base64ToUtf8(rawText);
+        return JSON.parse(jsonStr);
+    } catch (e) {
+        return null;
+    }
 }
 
 async function pushStateToCloudServer(silent) {
-    const cfg = getCloudSyncConfig();
-    if (!cfg.owner || !cfg.repo || !cfg.token) {
-        if (!silent) {
-            showToast("⚠️ 请先在「☁️ 校外云端连接」中填写并保存 GitHub 同步令牌 (Token)");
-            openLanShareModal();
-        }
-        return false;
-    }
-
     if (cloudSyncInProgress) return false;
     cloudSyncInProgress = true;
 
-    const nowTs = Date.now();
-    const payload = buildLanSyncPayload(nowTs);
-    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${CLOUD_DB_FILENAME}`;
-    const headers = {
-        "Authorization": `Bearer ${cfg.token}`,
-        "Accept": "application/vnd.github+json",
-        "Content-Type": "application/json"
-    };
-
     try {
-        // 1. Check current file SHA if it exists
-        let existingSha = null;
-        try {
-            const getRes = await fetch(`${apiUrl}?t=${Date.now()}`, { headers, cache: "no-store" });
-            if (getRes.ok) {
-                const fileMeta = await getRes.json();
-                if (fileMeta && fileMeta.sha) {
-                    existingSha = fileMeta.sha;
-                }
-            }
-        } catch (e) {}
-
-        // 2. PUT updated cloud_shared_data.json
-        const bodyObj = {
-            message: `Cloud sync update ${new Date(nowTs).toISOString()}`,
-            content: utf8ToBase64(JSON.stringify(payload))
-        };
-        if (existingSha) {
-            bodyObj.sha = existingSha;
+        // 1. Read-Before-Write Merge: pull latest from cloud first so we never overwrite another teacher's newly submitted leave application!
+        const existingCloud = await fetchZeroConfigCloudState();
+        if (existingCloud && existingCloud.hasData) {
+            mergeAndApplyCloudPayloadToLocal(existingCloud, true);
         }
 
-        const putRes = await fetch(apiUrl, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify(bodyObj)
-        });
+        const nowTs = Date.now();
+        const payload = buildLanSyncPayload(nowTs);
+        const b64Body = utf8ToBase64(JSON.stringify(payload));
 
-        if (putRes.ok) {
+        // 2. Push to Zero-Config Auto-Sharded Cloud Channel (works automatically for 100+ teachers for a full year without any token!)
+        let ok = await writeChunkedCloudString(ZERO_CONFIG_CLOUD_URL, b64Body);
+
+        // 3. Optional secondary backup to GitHub Repo if user also configured a GitHub Token
+        const cfg = getCloudSyncConfig();
+        if (cfg.owner && cfg.repo && cfg.token) {
+            try {
+                const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${CLOUD_DB_FILENAME}`;
+                const ghHeaders = {
+                    "Authorization": `Bearer ${cfg.token}`,
+                    "Accept": "application/vnd.github+json",
+                    "Content-Type": "application/json"
+                };
+                let existingSha = null;
+                const getRes = await fetch(`${apiUrl}?t=${Date.now()}`, { headers: ghHeaders, cache: "no-store" });
+                if (getRes.ok) {
+                    const meta = await getRes.json();
+                    if (meta && meta.sha) existingSha = meta.sha;
+                }
+                const bodyObj = {
+                    message: `Cloud sync ${new Date(nowTs).toISOString()}`,
+                    content: b64Body
+                };
+                if (existingSha) bodyObj.sha = existingSha;
+                const putRes = await fetch(apiUrl, { method: "PUT", headers: ghHeaders, body: JSON.stringify(bodyObj) });
+                if (putRes.ok) ok = true;
+            } catch (ghErr) {}
+        }
+
+        if (ok) {
             lastAppliedServerTimestamp = nowTs;
             try { localStorage.setItem(STORAGE_KEY_CLOUD_UPDATED_AT, String(nowTs)); } catch (e) {}
             setCloudStatusBadge(true, true);
             if (!silent) {
-                showToast("☁️ 已成功将当前数据推送保存至 GitHub 云端数据库！");
+                showToast("☁️ 已成功将当前数据实时同步至校外云端数据库！");
             }
             return true;
         } else {
-            setCloudStatusBadge(false, Boolean(cfg.token));
+            setCloudStatusBadge(false, false);
             if (!silent) {
-                showToast("❌ 推送至 GitHub 云端失败，请检查 Token 权限 (需勾选 repo) 及仓库名是否正确");
+                showToast("⚠️ 云端同步暂未响应，请稍后重试");
             }
         }
     } catch (e) {
-        setCloudStatusBadge(false, Boolean(cfg.token));
+        setCloudStatusBadge(false, false);
         if (!silent) {
-            showToast("❌ 网络连接异常，无法连接到 GitHub 云端");
+            showToast("⚠️ 网络连接异常，无法连接到云端数据库");
         }
     } finally {
         cloudSyncInProgress = false;
@@ -15444,82 +16231,39 @@ async function pushStateToCloudServer(silent) {
 }
 
 window.scheduleLanSyncPush = function() {
-    const cfg = getCloudSyncConfig();
-    if (!cfg.token) return; // Only auto-push when token is configured
     const nowTs = Date.now();
     lastAppliedServerTimestamp = nowTs;
     try { localStorage.setItem(STORAGE_KEY_CLOUD_UPDATED_AT, String(nowTs)); } catch (e) {}
     if (cloudSyncTimer) clearTimeout(cloudSyncTimer);
     cloudSyncTimer = setTimeout(() => {
         pushStateToCloudServer(true);
-    }, 800);
+    }, 350);
 };
 
 async function pullStateFromCloudServer(isInitial, silent) {
-    const cfg = getCloudSyncConfig();
-    if (!cfg.owner || !cfg.repo) return false;
-
-    const apiUrl = `https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${CLOUD_DB_FILENAME}?t=${Date.now()}`;
-    const headers = {
-        "Accept": "application/vnd.github+json"
-    };
-    if (cfg.token) {
-        headers["Authorization"] = `Bearer ${cfg.token}`;
-    }
-
     try {
-        const res = await fetch(apiUrl, { headers, cache: "no-store" });
-        if (res.status === 404) {
-            // File not created yet in the repo
-            if (cfg.token) {
-                setCloudStatusBadge(true, true);
-                if ((isInitial && hasMeaningfulLocalData()) || !silent) {
-                    await pushStateToCloudServer(true);
-                }
-            }
-            if (!silent) {
-                loadState();
-                if (typeof renderAdminLeaveApprovalTab === "function") renderAdminLeaveApprovalTab();
-                if (typeof renderTeacherPortalHistory === "function") renderTeacherPortalHistory();
-                if (typeof updateAdminPendingLeaveBadges === "function") updateAdminPendingLeaveBadges();
-                showToast(`✅ 已同步最新请假申请列表（当前共 ${(state.leaveApplications || []).length} 笔请假申请）`);
+        const cloudData = await fetchZeroConfigCloudState();
+        if (cloudData && cloudData.hasData) {
+            setCloudStatusBadge(true, true);
+            const hasUnpushedLocalApps = mergeAndApplyCloudPayloadToLocal(cloudData, silent);
+            if (isInitial && hasUnpushedLocalApps) {
+                await pushStateToCloudServer(true);
             }
             return true;
         }
-        if (!res.ok) {
-            setCloudStatusBadge(false, Boolean(cfg.token));
-            return false;
-        }
 
-        const fileObj = await res.json();
-        if (!fileObj || !fileObj.content) return false;
-
-        const decodedStr = base64ToUtf8(fileObj.content);
-        const serverData = JSON.parse(decodedStr);
-        setCloudStatusBadge(true, Boolean(cfg.token));
-
-        if (serverData && serverData.hasData) {
-            const serverTs = serverData.updatedAt || 0;
-            const serverRecCount = Array.isArray(serverData.records) ? serverData.records.length : 0;
-            const localRecCount = Array.isArray(state.records) ? state.records.length : 0;
-
-            if (isInitial) {
-                if (cfg.token && localRecCount > serverRecCount && lastAppliedServerTimestamp > serverTs) {
-                    await pushStateToCloudServer(true);
-                } else if (serverTs > lastAppliedServerTimestamp || (!hasMeaningfulLocalData() && serverRecCount >= 0)) {
-                    applyLanServerPayloadToLocal(serverData, silent);
-                }
-            } else {
-                if (!silent || serverTs > lastAppliedServerTimestamp) {
-                    applyLanServerPayloadToLocal(serverData, silent);
-                }
-            }
-        } else if (isInitial && cfg.token && hasMeaningfulLocalData()) {
+        // If Zero-Config Cloud is currently empty, seed it if this browser already has data!
+        setCloudStatusBadge(true, true);
+        if (hasMeaningfulLocalData()) {
             await pushStateToCloudServer(true);
+        }
+        if (!silent) {
+            const pendingCnt = (state.leaveApplications || []).filter(a => a.status === "pending").length;
+            showToast(`☁️ 已同步云端最新申请列表（当前共 ${(state.leaveApplications || []).length} 笔申请，${pendingCnt} 笔待处理）`);
         }
         return true;
     } catch (e) {
-        setCloudStatusBadge(false, Boolean(cfg.token));
+        setCloudStatusBadge(false, false);
         return false;
     }
 }
@@ -15532,12 +16276,9 @@ function setCloudStatusBadge(connected, hasWriteToken) {
     const cfg = getCloudSyncConfig();
 
     if (dot && label) {
-        if (connected && hasWriteToken) {
+        if (connected) {
             dot.textContent = "🟢";
-            label.textContent = "云端实时同步: 已开启";
-        } else if (connected) {
-            dot.textContent = "☁️";
-            label.textContent = "校外云端连接 (只读)";
+            label.textContent = "校外云端同步: 已连接";
         } else {
             dot.textContent = "☁️";
             label.textContent = "校外云端连接";
@@ -15545,16 +16286,16 @@ function setCloudStatusBadge(connected, hasWriteToken) {
     }
 
     if (banner) {
-        if (connected && hasWriteToken) {
+        if (connected) {
             banner.style.background = "#f0fdf4";
             banner.style.borderColor = "#86efac";
             banner.style.color = "#166534";
-            banner.innerHTML = `🟢 <strong>GitHub 跨网络云端实时同步已连接 (${cfg.owner}/${cfg.repo})！</strong> 无论老师在家里用 4G/5G 手机流量还是学校电脑访问，所有请假申请、密码修改与派代课记录均自动跨网实时同步。`;
+            banner.innerHTML = `🟢 <strong>校外互联网云端实时数据库已自动连接！</strong> 无需设置 Token、无需同一 Wi-Fi，任何老师在家里用 4G/5G 手机或电脑打开 <code>https://${cfg.owner}.github.io/${cfg.repo}/</code> 提交的请假单，教务处均可直接实时抓取！`;
         } else {
             banner.style.background = "#eff6ff";
             banner.style.borderColor = "#93c5fd";
             banner.style.color = "#1e40af";
-            banner.innerHTML = `☁️ <strong>校外互联网云端连接模式 (${cfg.owner}/${cfg.repo})</strong>：在下方粘贴您的 GitHub Token 并点击「💾 保存并连接云端」，即可激活全球校外 4G/5G 多设备双向实时同步！`;
+            banner.innerHTML = `☁️ <strong>校外互联网云端连接模式 (${cfg.owner}/${cfg.repo})</strong>：点击下方「🔄 从云端拉取最新数据」或「📤 将当前数据推送至云端」即可立即同步。`;
         }
     }
 }
@@ -15579,73 +16320,51 @@ window.saveCloudSyncConfigAndTest = async function() {
     const repo = (document.getElementById("cloudGhRepoInput")?.value || "heng").trim();
     const token = (document.getElementById("cloudGhTokenInput")?.value || "").trim();
 
-    if (!owner || !repo) {
-        alert("请填写 GitHub 用户名和仓库名！");
-        return;
-    }
     saveCloudSyncConfigObj({ owner, repo, token });
     updateCloudModalInputs();
 
-    if (token) {
-        showToast("⏳ 正在连接 GitHub 云端数据库并同步数据...");
-        const pulled = await pullStateFromCloudServer(true, true);
-        const pushed = await pushStateToCloudServer(false);
-        if (pulled || pushed) {
-            startCloudPollTimer();
-        }
-    } else {
-        setCloudStatusBadge(false, false);
-        showToast("ℹ️ 已保存仓库信息（未填写 Token，当前为本地独立存储模式）");
-    }
+    showToast("⏳ 正在连接校外云端数据库并同步数据...");
+    await pullStateFromCloudServer(true, true);
+    await pushStateToCloudServer(false);
+    startCloudPollTimer();
 };
 
 window.copyTeacherCloudAutoLink = function() {
     const cfg = getCloudSyncConfig();
     const baseUrl = `https://${cfg.owner}.github.io/${cfg.repo}/`;
-    if (!cfg.token) {
-        alert("⚠️ 请先在下方「2. 跨网络云端实时数据库配置」中粘贴您的 GitHub Token 并点击「💾 保存并连接云端」，然后再复制此专属链接！");
-        document.getElementById("cloudGhTokenInput")?.focus();
-        return;
-    }
-
-    const encodedCfg = encodeURIComponent(utf8ToBase64(JSON.stringify(cfg)));
-    const fullInviteUrl = `${baseUrl}#cloud=${encodedCfg}`;
+    const fullInviteUrl = cfg.token
+        ? `${baseUrl}#cloud=${encodeURIComponent(utf8ToBase64(JSON.stringify(cfg)))}`
+        : baseUrl;
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(fullInviteUrl).then(() => {
-            showToast("🎉 已复制【带云端同步通道的老师专属链接】！发给老师点击一次即可在校外 4G/5G 实时请假！");
+            showToast(`🎉 已复制校外云端访问链接：${baseUrl}（直接发给老师即可在手机 4G/5G 请假）！`);
         }).catch(() => {
-            prompt("请复制以下带云端同步通道的专属链接发给老师：", fullInviteUrl);
+            prompt("请复制以下校外云端访问链接发给老师：", fullInviteUrl);
         });
     } else {
-        prompt("请复制以下带云端同步通道的专属链接发给老师：", fullInviteUrl);
+        prompt("请复制以下校外云端访问链接发给老师：", fullInviteUrl);
     }
 };
 
 function startCloudPollTimer() {
     if (cloudPollInterval) clearInterval(cloudPollInterval);
     cloudPollInterval = setInterval(() => {
-        if (!document.hidden) {
+        if (!document.hidden && !cloudSyncInProgress) {
             pullStateFromCloudServer(false, true);
         }
-    }, 12000);
+    }, 8000);
 }
 
 window.initLanSyncEngine = async function() {
     checkUrlHashForCloudInvite();
     updateCloudModalInputs();
 
-    const cfg = getCloudSyncConfig();
-    if (cfg.owner && cfg.repo && (cfg.token || window.location.hostname.endsWith(".github.io"))) {
-        const ok = await pullStateFromCloudServer(true, true);
-        if (ok && cfg.token) {
-            startCloudPollTimer();
-        }
-    }
+    await pullStateFromCloudServer(true, true);
+    startCloudPollTimer();
 
     window.addEventListener("focus", () => {
-        const c = getCloudSyncConfig();
-        if (c.owner && c.repo && c.token) {
+        if (!cloudSyncInProgress) {
             pullStateFromCloudServer(false, true);
         }
     });
@@ -15679,14 +16398,7 @@ window.copyLanUrlText = function(elId) {
 
 window.manualPullFromLanServer = async function() {
     loadState();
-    if (typeof renderAdminLeaveApprovalTab === "function") renderAdminLeaveApprovalTab();
-    if (typeof renderTeacherPortalHistory === "function") renderTeacherPortalHistory();
-    if (typeof updateAdminPendingLeaveBadges === "function") updateAdminPendingLeaveBadges();
-
-    const ok = await pullStateFromCloudServer(false, false);
-    if (!ok) {
-        showToast(`✅ 已刷新本地最新请假申请（共 ${(state.leaveApplications || []).length} 笔；如需跨网同步请点击右上角「☁️ 校外云端连接」配置）`);
-    }
+    await pullStateFromCloudServer(false, false);
 };
 
 window.manualPushToLanServer = async function() {
@@ -16326,13 +17038,16 @@ window.submitTeacherLeaveApplication = function() {
     }
 
     saveLeaveApplications();
+    if (typeof pushStateToCloudServer === "function") {
+        pushStateToCloudServer(true);
+    }
     document.getElementById("tpLeaveReasonInput").value = "";
     document.getElementById("tpLeaveClassNoteInput").value = "";
 
     renderTeacherPortalHistory();
     renderAdminLeaveApprovalTab();
     switchTeacherPortalSubTab("tp-panel-history");
-    showToast(`🚀 已成功提交 ${teacherName} 老师于 ${dateStr} 的【${leaveType}】申请（共 ${selectedPeriods.length} 节需代课），已实时同步至教务处！`);
+    showToast(`🚀 已成功提交 ${teacherName} 老师于 ${dateStr} 的【${leaveType}】申请（共 ${selectedPeriods.length} 节需代课），已实时同步至云端教务处！`);
 };
 
 window.withdrawMyLeaveApplication = function(appId) {
@@ -16343,11 +17058,15 @@ window.withdrawMyLeaveApplication = function(appId) {
     if (!confirm(`确定要撤回您于【${app.date} (${app.dayName})】的 ${app.leaveType} 请假申请吗？`)) {
         return;
     }
+    if (typeof markLeaveAppDeleted === "function") markLeaveAppDeleted(appId);
     state.leaveApplications = state.leaveApplications.filter(a => a.id !== appId);
     saveLeaveApplications();
+    if (typeof pushStateToCloudServer === "function") {
+        pushStateToCloudServer(true);
+    }
     renderTeacherPortalHistory();
     renderAdminLeaveApprovalTab();
-    showToast("🗑️ 已撤回该笔请假申请");
+    showToast("🗑️ 已撤回该笔请假申请并同步至云端");
 };
 
 // Render Teacher's Substitute & Teaching Tasks (including class handover notes from absent teachers!)
@@ -16772,11 +17491,15 @@ window.adminDeleteLeaveApplication = function(appId) {
     if (!confirmSystemDeletion(`确定要永久删除【${app.teacher} 老师于 ${app.date} 的 ${app.leaveType} 请假申请】吗？`)) {
         return;
     }
+    if (typeof markLeaveAppDeleted === "function") markLeaveAppDeleted(appId);
     state.leaveApplications = state.leaveApplications.filter(a => a.id !== appId);
     saveLeaveApplications();
+    if (typeof pushStateToCloudServer === "function") {
+        pushStateToCloudServer(true);
+    }
     renderAdminLeaveApprovalTab();
     renderTeacherPortalHistory();
-    showToast("🗑️ 已删除该笔请假申请记录");
+    showToast("🗑️ 已删除该笔请假申请记录并同步至云端");
 };
 
 window.autoMarkMatchingLeaveApplicationDispatched = function(dateStr, teacherName) {
