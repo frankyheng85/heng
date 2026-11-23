@@ -3474,7 +3474,7 @@ body {
                             <h3>📝 提交请假与代课申请单 / Submit Leave &amp; Substitute Application</h3>
                             <p class="text-muted text-sm" style="margin:2px 0 0 0;">选择请假日期后，系统将自动列出您当天的课程供勾选，提交后实时同步至教务处安排代课老师 | Select your leave date to auto-list your lessons for the day. Your application syncs immediately to Academic Affairs for substitution.</p>
                         </div>
-                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openChangePasswordModal()">🔑 修改我的登录密码 / Change Password</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="openChangePasswordModal()">🔑 修改我的登录密码 / Reset Password</button>
                     </div>
                     <div class="panel-body" style="padding:16px;">
                         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:14px; margin-bottom:16px;">
@@ -3622,7 +3622,7 @@ body {
     <div id="changePasswordModal" class="modal-overlay" style="display:none;">
         <div class="modal-content" style="max-width: 480px;">
             <div class="modal-header" style="background:#1e3a8a; color:#fff; display:flex; justify-content:space-between; align-items:center; padding:12px 18px;">
-                <h3 style="margin:0; font-size:15.5px; color:#fff;">🔑 修改个人登录密码 / Change Personal Password</h3>
+                <h3 style="margin:0; font-size:15.5px; color:#fff;">🔑 修改个人登录密码 / Reset Personal Password</h3>
                 <button type="button" class="btn-close-modal" onclick="closeChangePasswordModal()">✕</button>
             </div>
             <div class="modal-body" style="padding:18px 20px;">
@@ -16903,7 +16903,7 @@ function applyRoleUI(switchDefaultTab) {
         if (labelEl) labelEl.textContent = `${window.currentUserSession.teacherName} 老师 (Teacher)`;
         if (btnPwd) {
             btnPwd.style.display = "inline-flex";
-            btnPwd.textContent = "🔑 改密 / Password";
+            btnPwd.textContent = "🔑 改密 / Reset Password";
         }
         if (btnLogout) btnLogout.textContent = "🚪 切换/退出 / Logout";
         if (navPortalBtn) navPortalBtn.textContent = "📱 教师个人中心 (请假/代课/课表) | Teacher Self-Service Portal";
