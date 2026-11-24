@@ -16099,11 +16099,11 @@ window.playAdminNewLeaveChime = function() {
         const ctx = getAdminAudioContext();
         if (!ctx) return;
 
-        // Play a clear, pleasant 2-round chime (C5 -> E5 -> G5 -> C6)
+        // Play a clear, pleasant 5-second (6-round) chime (C5 -> E5 -> G5 -> C6)
         const notes = [523.25, 659.25, 783.99, 1046.50];
         const now = ctx.currentTime;
 
-        [0, 0.75].forEach(roundOffset => {
+        [0, 0.85, 1.70, 2.55, 3.40, 4.25].forEach(roundOffset => {
             notes.forEach((freq, idx) => {
                 const startTime = now + roundOffset + idx * 0.13;
                 const osc = ctx.createOscillator();
@@ -17730,48 +17730,6 @@ function renderTpLeavePeriodsChecklist() {
     `;
 }
 
-const ADMIN_WHATSAPP_NUMBER = "60165129519";
-
-function buildLeaveWhatsAppMessage(app) {
-    if (!app) return "";
-    const periods = Array.isArray(app.periods) ? app.periods : [];
-    const scopeStr = app.leaveScope === "partial" ? "部分节次 / Partial Leave" : "全天请假 / Full Day";
-    const periodLines = periods.length > 0
-        ? periods.map((p, idx) => `   ${idx + 1}. ${getBilingualPeriodLabel(p.periodKey, p.periodLabel)} (${p.periodTime || ""}) — ${p.className || ""} ${p.subject || ""}`).join("\n")
-        : "   无须安排代课 / No substitute periods required";
-
-    let msg = `📢【三民独中教师线上请假通知 / San Min Teacher Leave Notice】\n`;
-    msg += `👩‍🏫 老师 / Teacher：${app.teacher}\n`;
-    msg += `📅 日期 / Date：${app.date} (${app.dayName || ""})\n`;
-    msg += `📌 假别 / Type：${getBilingualLeaveTypeLabel(app.leaveType)}\n`;
-    msg += `⏰ 范围 / Scope：${scopeStr}\n`;
-    msg += `💬 事由 / Reason：${app.reason || "-"}\n`;
-    if (app.classNote) {
-        msg += `📖 课堂交代 / Classwork：${app.classNote}\n`;
-    }
-    msg += `📚 需代课节次 / Periods (${periods.length})：\n${periodLines}\n`;
-    msg += `✅ 资料已同步至教务处系统 / Synced to Academic Affairs System.`;
-    return msg;
-}
-
-window.notifyAdminViaWhatsApp = function(appOrId) {
-    let app = null;
-    if (typeof appOrId === "string") {
-        app = (state.leaveApplications || []).find(a => a.id === appOrId);
-    } else if (appOrId && typeof appOrId === "object") {
-        app = appOrId;
-    }
-    if (!app) return;
-
-    const msg = buildLeaveWhatsAppMessage(app);
-    const waUrl = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-    const win = window.open(waUrl, "_blank");
-    if (!win) {
-        // Fallback if popup blocker prevents window.open after async sync
-        showToast("💬 请点击下方记录上的「WhatsApp 通知教务处」按钮发送通知！ | Please tap the WhatsApp Notify button below!");
-    }
-};
-
 window.submitTeacherLeaveApplication = async function() {
     const teacherName = getActivePortalTeacherName();
     if (!teacherName || !TEACHERS_DATA[teacherName]) {
@@ -17868,9 +17826,7 @@ window.submitTeacherLeaveApplication = async function() {
     renderTeacherPortalHistory();
     renderAdminLeaveApprovalTab();
     switchTeacherPortalSubTab("tp-panel-history");
-    showToast(`🚀 已成功提交 ${teacherName} 老师于 ${dateStr} 的【${getBilingualLeaveTypeLabel(leaveType)}】申请并完成云端同步，正在打开 WhatsApp 通知教务处！ | Synced & opening WhatsApp!`);
-
-    notifyAdminViaWhatsApp(appObj);
+    showToast(`🚀 已成功提交 ${teacherName} 老师于 ${dateStr} 的【${getBilingualLeaveTypeLabel(leaveType)}】申请（共 ${selectedPeriods.length} 节需代课），已同步至教务处！ | Leave application submitted & synced!`);
 };
 
 window.withdrawMyLeaveApplication = function(appId) {
@@ -18039,10 +17995,7 @@ window.renderTeacherPortalHistory = function() {
                         <span class="text-muted text-sm">${app.leaveScope === "partial" ? "部分节次请假 / Partial Leave" : "全天请假 / Full Day Leave"}</span>
                     </div>
                     ${effectiveStatus === "pending"
-                        ? `<div style="display:flex; gap:6px; flex-wrap:wrap;">
-                            <button type="button" class="btn btn-sm" style="background:#25D366; color:#fff; border:none; font-weight:700;" onclick="notifyAdminViaWhatsApp('${app.id}')">💬 WhatsApp 通知教务处 / Notify Admin</button>
-                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="withdrawMyLeaveApplication('${app.id}')">🗑️ 撤回申请 / Withdraw</button>
-                           </div>`
+                        ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="withdrawMyLeaveApplication('${app.id}')">🗑️ 撤回申请 / Withdraw</button>`
                         : ""}
                 </div>
                 <div style="margin-top:8px; font-size:13.5px; color:#334155;">
